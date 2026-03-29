@@ -47,7 +47,7 @@ export default function ExpenseDetailPage({ params }: { params: Promise<{ id: st
         <Header title="Expense Not Found" />
         <div className="p-8">
           <p className="text-muted-foreground">This expense does not exist or has been deleted.</p>
-          <Link href="/dashboard/employee/expenses">
+          <Link href="/dashboard/manager/expenses">
             <Button className="mt-4">Back to Expenses</Button>
           </Link>
         </div>
@@ -136,7 +136,7 @@ export default function ExpenseDetailPage({ params }: { params: Promise<{ id: st
             <div className="flex flex-wrap gap-2 mt-6 pt-6 border-t">
               {expense.status === 'draft' && (
                 <>
-                  <Link href={`/dashboard/employee/expenses/${expense.id}/edit`}>
+                  <Link href={`/dashboard/manager/expenses/${expense.id}/edit`}>
                     <Button variant="outline">
                       <Edit className="w-4 h-4 mr-2" />
                       Edit
@@ -150,7 +150,7 @@ export default function ExpenseDetailPage({ params }: { params: Promise<{ id: st
                     variant="destructive"
                     onClick={() => {
                       deleteExpense(expense.id);
-                      router.push('/dashboard/employee/expenses');
+                      router.push('/dashboard/manager/expenses');
                     }}
                   >
                     <Trash2 className="w-4 h-4 mr-2" />
