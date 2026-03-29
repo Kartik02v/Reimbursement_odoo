@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { FieldGroup, Field, FieldLabel } from '@/components/ui/field';
+import { Switch } from '@/components/ui/switch';
 import {
   Select,
   SelectContent,
@@ -50,17 +51,22 @@ import {
   User as UserIcon,
   Mail,
   Building2,
+  Lock,
+  ShieldAlert,
+  Settings,
 } from 'lucide-react';
 import { format } from 'date-fns';
-import type { User, UserRole } from '@/lib/types';
+import type { User, UserRole, UserPermissions } from '@/lib/types';
 
 export default function UsersPage() {
   const { user, company } = useAuth();
-  const { users, createUser, updateUser, deleteUser } = useExpenses();
+  const { users, createUser, updateUser, deleteUser, updateUserPermissions } = useExpenses();
 
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showPermissionsDialog, setShowPermissionsDialog] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -68,12 +74,21 @@ export default function UsersPage() {
     managerId: '',
   });
 
-  if (!user || !company || user.role !== 'admin') {
+  const [permissionsData, setPermissionsData] = useState<UserPermissions>({
+    canViewAllExpenses: false,
+    canApproveAllExpenses: false,
+    canManageUsers: false,
+    canConfigureWorkflows: false,
+  });
+
+  const canManage = user?.role === 'admin' || user?.permissions?.canManageUsers;
+
+  if (!user || !company || !canManage) {
     return (
       <div className="min-h-screen">
         <Header title="Access Denied" />
         <div className="p-8">
-          <p className="text-muted-foreground">You do not have permission to view this page.</p>
+          <p className="text-muted-foreground">Admin or elevated manager access required.</p>
         </div>
       </div>
     );
@@ -118,7 +133,7 @@ export default function UsersPage() {
       name: formData.name,
       email: formData.email,
       role: formData.role,
-      managerId: formData.managerId === 'none' ? undefined : (formData.managerId || undefined),
+      managerId: (formData.managerId && formData.managerId !== 'none') ? formData.managerId : undefined,
       companyId: company.id,
       avatar: formData.name.split(' ').map((n) => n[0]).join('').toUpperCase(),
     });
@@ -132,7 +147,7 @@ export default function UsersPage() {
         name: formData.name,
         email: formData.email,
         role: formData.role,
-        managerId: formData.managerId === 'none' ? undefined : (formData.managerId || undefined),
+        managerId: (formData.managerId && formData.managerId !== 'none') ? formData.managerId : undefined,
       });
       setShowEditDialog(false);
       setSelectedUser(null);
@@ -151,8 +166,27 @@ export default function UsersPage() {
       name: '',
       email: '',
       role: 'employee',
-      managerId: '',
+      managerId: 'none',
     });
+  };
+
+  const openPermissionsDialog = (userToPermit: User) => {
+    setSelectedUser(userToPermit);
+    setPermissionsData(userToPermit.permissions || {
+      canViewAllExpenses: false,
+      canApproveAllExpenses: false,
+      canManageUsers: false,
+      canConfigureWorkflows: false,
+    });
+    setShowPermissionsDialog(true);
+  };
+
+  const handleSavePermissions = () => {
+    if (selectedUser) {
+      updateUserPermissions(selectedUser.id, permissionsData);
+      setShowPermissionsDialog(false);
+      setSelectedUser(null);
+    }
   };
 
   const openEditDialog = (userToEdit: User) => {
@@ -161,7 +195,7 @@ export default function UsersPage() {
       name: userToEdit.name,
       email: userToEdit.email,
       role: userToEdit.role,
-      managerId: userToEdit.managerId || '',
+      managerId: userToEdit.managerId || 'none',
     });
     setShowEditDialog(true);
   };
@@ -291,6 +325,12 @@ export default function UsersPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          {u.role === 'manager' && (
+                            <DropdownMenuItem onClick={() => openPermissionsDialog(u)}>
+                              <Lock className="w-4 h-4 mr-2" />
+                              Permissions
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuItem onClick={() => openEditDialog(u)}>
                             <Edit className="w-4 h-4 mr-2" />
                             Edit
@@ -360,7 +400,7 @@ export default function UsersPage() {
                 </SelectContent>
               </Select>
             </Field>
-            {formData.role === 'employee' && (
+            {formData.role !== 'admin' && (
               <Field>
                 <FieldLabel htmlFor="manager">Reports To</FieldLabel>
                 <Select
@@ -438,7 +478,7 @@ export default function UsersPage() {
                 </SelectContent>
               </Select>
             </Field>
-            {formData.role === 'employee' && (
+            {formData.role !== 'admin' && (
               <Field>
                 <FieldLabel htmlFor="edit-manager">Reports To</FieldLabel>
                 <Select
@@ -468,6 +508,82 @@ export default function UsersPage() {
             </Button>
             <Button onClick={handleEdit} disabled={!formData.name || !formData.email}>
               Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* Permissions Dialog */}
+      <Dialog open={showPermissionsDialog} onOpenChange={setShowPermissionsDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Management Permissions</DialogTitle>
+            <DialogDescription>
+              Grant system-wide access to <span className="font-semibold text-foreground">{selectedUser?.name}</span>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50 border">
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2">
+                  <Shield className="w-4 h-4 text-primary" />
+                  <p className="font-medium">View All Expenses</p>
+                </div>
+                <p className="text-sm text-muted-foreground">Manager can see expenses company-wide</p>
+              </div>
+              <Switch
+                checked={permissionsData.canViewAllExpenses}
+                onCheckedChange={(v) => setPermissionsData({ ...permissionsData, canViewAllExpenses: v })}
+              />
+            </div>
+
+            <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50 border">
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2">
+                  <ShieldAlert className="w-4 h-4 text-amber-600" />
+                  <p className="font-medium">Admin Override</p>
+                </div>
+                <p className="text-sm text-muted-foreground">Directly approve or reject any expense</p>
+              </div>
+              <Switch
+                checked={permissionsData.canApproveAllExpenses}
+                onCheckedChange={(v) => setPermissionsData({ ...permissionsData, canApproveAllExpenses: v })}
+              />
+            </div>
+
+            <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50 border">
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2">
+                  <Users className="w-4 h-4 text-blue-600" />
+                  <p className="font-medium">Manage Other Users</p>
+                </div>
+                <p className="text-sm text-muted-foreground">Add, edit, or remove company members</p>
+              </div>
+              <Switch
+                checked={permissionsData.canManageUsers}
+                onCheckedChange={(v) => setPermissionsData({ ...permissionsData, canManageUsers: v })}
+              />
+            </div>
+
+            <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50 border">
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2">
+                  <Settings className="w-4 h-4 text-slate-600" />
+                  <p className="font-medium">Configure Workflows</p>
+                </div>
+                <p className="text-sm text-muted-foreground">Create and edit approval chains</p>
+              </div>
+              <Switch
+                checked={permissionsData.canConfigureWorkflows}
+                onCheckedChange={(v) => setPermissionsData({ ...permissionsData, canConfigureWorkflows: v })}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowPermissionsDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSavePermissions}>
+              Save Permissions
             </Button>
           </DialogFooter>
         </DialogContent>

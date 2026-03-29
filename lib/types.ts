@@ -25,6 +25,13 @@ export interface Company {
   createdAt: Date;
 }
 
+export interface UserPermissions {
+  canViewAllExpenses: boolean;
+  canApproveAllExpenses: boolean;
+  canManageUsers: boolean;
+  canConfigureWorkflows: boolean;
+}
+
 export interface User {
   id: string;
   email: string;
@@ -34,6 +41,7 @@ export interface User {
   managerId?: string;
   department?: string;
   avatar?: string;
+  permissions?: UserPermissions;
   createdAt: Date;
 }
 
@@ -134,4 +142,58 @@ export interface AnalyticsData {
   expensesByCategory: { category: string; amount: number; count: number }[];
   expensesByMonth: { month: string; amount: number; count: number }[];
   topSpenders: { userId: string; userName: string; amount: number }[];
+}
+
+// Audit log action types
+export type AuditActionType =
+  | 'EXPENSE_CREATED'
+  | 'EXPENSE_EDITED'
+  | 'EXPENSE_DELETED'
+  | 'EXPENSE_SUBMITTED'
+  | 'EXPENSE_APPROVED'
+  | 'EXPENSE_REJECTED'
+  | 'EXPENSE_RESUBMITTED'
+  | 'ADMIN_OVERRIDE_APPROVE'
+  | 'ADMIN_OVERRIDE_REJECT'
+  | 'USER_CREATED'
+  | 'USER_UPDATED'
+  | 'USER_DELETED'
+  | 'WORKFLOW_CREATED'
+  | 'WORKFLOW_UPDATED'
+  | 'WORKFLOW_DELETED';
+
+export type AuditEntityType = 'Expense' | 'User' | 'Workflow' | 'System';
+
+export interface AuditLog {
+  id: string;
+  companyId: string;
+  userId: string;       // Who performed the action
+  userName: string;
+  actionType: AuditActionType;
+  entityType: AuditEntityType;
+  entityId: string;
+  entityName: string;   // Human-readable name (expense title, user name, etc.)
+  oldValue?: string;    // JSON snapshot before change
+  newValue?: string;    // JSON snapshot after change
+  comment?: string;     // Override reason or approver comment
+  overrideType?: 'FORCE_APPROVE' | 'FORCE_REJECT';
+  timestamp: Date;
+}
+
+// Admin-configurable team notification rules
+export type NotificationEvent =
+  | 'expense_submitted'
+  | 'expense_approved'
+  | 'expense_rejected'
+  | 'high_value_expense'
+  | 'workflow_updated'
+  | 'user_created';
+
+export interface NotificationRule {
+  id: string;
+  companyId: string;
+  event: NotificationEvent;
+  notifyRoles: ('admin' | 'manager' | 'employee')[];
+  threshold?: number; // For high_value_expense: amount threshold
+  isEnabled: boolean;
 }
