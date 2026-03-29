@@ -25,6 +25,7 @@ import {
   LogOut,
   ChevronDown,
   Building2,
+  UserCircle,
 } from 'lucide-react';
 
 const employeeLinks = [
@@ -34,8 +35,10 @@ const employeeLinks = [
 
 const managerLinks = [
   { href: '/dashboard/manager', label: 'Overview', icon: LayoutDashboard },
-  { href: '/dashboard/employee/expenses', label: 'My Expenses', icon: FileText },
+  { href: '/dashboard/manager/expenses', label: 'My Expenses', icon: FileText },
   { href: '/dashboard/manager/approvals', label: 'Approvals', icon: CheckSquare },
+  { href: '/dashboard/manager/teams', label: 'My Team', icon: Users },
+  { href: '/dashboard/manager/profile', label: 'Profile', icon: UserCircle },
 ];
 
 const adminLinks = [
@@ -138,6 +141,14 @@ export function Sidebar() {
               <p className="text-xs text-muted-foreground">{user.email}</p>
             </div>
             <DropdownMenuSeparator />
+            {user.role === 'manager' && (
+              <DropdownMenuItem asChild>
+                <Link href="/dashboard/manager/profile" className="flex items-center w-full">
+                  <UserCircle className="w-4 h-4 mr-2" />
+                  My Profile
+                </Link>
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem onClick={() => switchRole('admin')}>
               Switch to Admin
             </DropdownMenuItem>

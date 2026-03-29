@@ -7,9 +7,9 @@ import { useExpenses } from '@/lib/expense-context';
 import { Header } from '@/components/dashboard/header';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { Empty } from '@/components/ui/empty';
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import {
   Dialog,
   DialogContent,
@@ -25,19 +25,45 @@ import {
   TabsTrigger,
 } from '@/components/ui/tabs';
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
   CheckCircle2,
   XCircle,
   Clock,
   Eye,
-  Receipt,
-  User,
-  Calendar,
-  Building2,
-  Tag,
-  MessageSquare,
   AlertTriangle,
   CheckCheck,
+  FileText,
+  MoreHorizontal,
+  Filter,
+  Users as UsersIcon,
 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { format, formatDistanceToNow } from 'date-fns';
 import type { Expense } from '@/lib/types';
 
@@ -50,11 +76,21 @@ export default function ApprovalsPage() {
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [comment, setComment] = useState('');
   const [rejectReason, setRejectReason] = useState('');
+  const [teamFilter, setTeamFilter] = useState<string>('all');
 
   if (!user || !company) return null;
 
-  const pendingApprovals = getPendingApprovalsForUser(user.id);
+  const pendingApprovalsAll = getPendingApprovalsForUser(user.id);
   
+  // Get unique departments (teams) from pending approvals
+  const teamOptions = Array.from(new Set(
+    pendingApprovalsAll.map(e => users.find(u => u.id === e.submittedBy)?.department).filter(Boolean)
+  )) as string[];
+
+  const pendingApprovals = teamFilter === 'all' 
+    ? pendingApprovalsAll 
+    : pendingApprovalsAll.filter(e => users.find(u => u.id === e.submittedBy)?.department === teamFilter);
+
   // Get recently processed expenses (approved/rejected in last 7 days)
   const recentlyProcessed = expenses
     .filter((e) => {
@@ -73,8 +109,8 @@ export default function ApprovalsPage() {
     return categories.find((c) => c.id === categoryId)?.name || 'Other';
   };
 
-  const getSubmitterName = (submitterId: string) => {
-    return users.find((u) => u.id === submitterId)?.name || 'Unknown';
+  const getSubmitter = (submitterId: string) => {
+    return users.find((u) => u.id === submitterId);
   };
 
   const handleApprove = () => {
@@ -95,147 +131,214 @@ export default function ApprovalsPage() {
     }
   };
 
-  const ExpenseCard = ({ expense, showActions = true }: { expense: Expense; showActions?: boolean }) => {
-    const submitter = users.find((u) => u.id === expense.submittedBy);
+  const getStatusBadge = (expense: Expense) => {
     const userAction = expense.approvalHistory.find((h) => h.approverId === user.id);
-
-    return (
-      <Card className="hover:shadow-md transition-shadow">
-        <CardContent className="pt-6">
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary font-medium">
-                {submitter?.avatar || submitter?.name.charAt(0) || '?'}
-              </div>
-              <div>
-                <p className="font-medium">{submitter?.name}</p>
-                <p className="text-xs text-muted-foreground">
-                  Submitted {formatDistanceToNow(new Date(expense.createdAt), { addSuffix: true })}
-                </p>
-              </div>
-            </div>
-            <div className="text-right">
-              <p className="text-xl font-bold">
-                {company.country.currency.symbol}
-                {(expense.convertedAmount || expense.amount).toLocaleString('en-US', {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
-              </p>
-              {expense.currency !== company.country.currency.code && (
-                <p className="text-xs text-muted-foreground">
-                  {expense.currency} {expense.amount.toFixed(2)}
-                </p>
-              )}
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            <div>
-              <h3 className="font-semibold text-lg">{expense.title}</h3>
-              {expense.merchantName && (
-                <p className="text-sm text-muted-foreground flex items-center gap-1">
-                  <Building2 className="w-3 h-3" />
-                  {expense.merchantName}
-                </p>
-              )}
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              <Badge variant="secondary">
-                <Tag className="w-3 h-3 mr-1" />
-                {getCategoryName(expense.category)}
-              </Badge>
-              <Badge variant="outline">
-                <Calendar className="w-3 h-3 mr-1" />
-                {format(new Date(expense.expenseDate), 'MMM d, yyyy')}
-              </Badge>
-            </div>
-
-            {expense.description && (
-              <p className="text-sm text-muted-foreground line-clamp-2">{expense.description}</p>
-            )}
-
-            {/* Previous approvals */}
-            {expense.approvalHistory.length > 0 && (
-              <div className="pt-3 border-t space-y-2">
-                <p className="text-xs font-medium text-muted-foreground">Previous Approvals</p>
-                {expense.approvalHistory.map((history, idx) => (
-                  <div key={idx} className="flex items-center gap-2 text-sm">
-                    {history.status === 'approved' ? (
-                      <CheckCircle2 className="w-4 h-4 text-green-500" />
-                    ) : (
-                      <XCircle className="w-4 h-4 text-destructive" />
-                    )}
-                    <span>
-                      {history.approverName} {history.status} on{' '}
-                      {format(new Date(history.timestamp), 'MMM d')}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {userAction && (
-              <div className="pt-3 border-t">
-                <div className={`flex items-center gap-2 text-sm ${
-                  userAction.status === 'approved' ? 'text-green-600' : 'text-destructive'
-                }`}>
-                  {userAction.status === 'approved' ? (
-                    <CheckCircle2 className="w-4 h-4" />
-                  ) : (
-                    <XCircle className="w-4 h-4" />
-                  )}
-                  <span>
-                    You {userAction.status} this on {format(new Date(userAction.timestamp), 'MMM d, yyyy')}
-                  </span>
-                </div>
-                {userAction.comment && (
-                  <p className="text-sm text-muted-foreground mt-1 pl-6">
-                    {userAction.comment}
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2 mt-4 pt-4 border-t">
-            <Link href={`/dashboard/employee/expenses/${expense.id}`} className="flex-1">
-              <Button variant="outline" className="w-full">
-                <Eye className="w-4 h-4 mr-2" />
-                View Details
-              </Button>
-            </Link>
-            {showActions && (
-              <>
-                <Button
-                  variant="outline"
-                  className="text-destructive hover:text-destructive"
-                  onClick={() => {
-                    setSelectedExpense(expense);
-                    setShowRejectDialog(true);
-                  }}
-                >
-                  <XCircle className="w-4 h-4 mr-2" />
-                  Reject
-                </Button>
-                <Button
-                  className="bg-green-600 hover:bg-green-700"
-                  onClick={() => {
-                    setSelectedExpense(expense);
-                    setShowApproveDialog(true);
-                  }}
-                >
-                  <CheckCircle2 className="w-4 h-4 mr-2" />
-                  Approve
-                </Button>
-              </>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-    );
+    
+    if (userAction) {
+      if (userAction.status === 'approved') {
+        return <Badge className="bg-green-100 text-green-700 hover:bg-green-100">Approved</Badge>;
+      }
+      return <Badge variant="destructive">Rejected</Badge>;
+    }
+    
+    switch (expense.status) {
+      case 'pending':
+        return <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">Pending</Badge>;
+      case 'approved':
+        return <Badge className="bg-green-100 text-green-700 hover:bg-green-100">Approved</Badge>;
+      case 'rejected':
+        return <Badge variant="destructive">Rejected</Badge>;
+      default:
+        return <Badge variant="secondary">{expense.status}</Badge>;
+    }
   };
+
+  const ApprovalTable = ({ expenses, showActions = true }: { expenses: Expense[]; showActions?: boolean }) => (
+    <div className="border rounded-lg overflow-hidden">
+      <Table>
+        <TableHeader>
+          <TableRow className="bg-muted/50">
+            <TableHead className="w-[200px]">Submitter</TableHead>
+            <TableHead className="w-[250px]">Expense Details</TableHead>
+            <TableHead className="w-[120px]">Category</TableHead>
+            <TableHead className="w-[120px] text-right">Amount</TableHead>
+            <TableHead className="w-[120px]">Date</TableHead>
+            <TableHead className="w-[100px]">Status</TableHead>
+            <TableHead className="w-[150px] text-center">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {expenses.map((expense) => {
+            const submitter = getSubmitter(expense.submittedBy);
+            const userAction = expense.approvalHistory.find((h) => h.approverId === user.id);
+
+            return (
+              <TableRow key={expense.id} className="hover:bg-muted/30">
+                {/* Submitter */}
+                <TableCell>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-medium text-sm">
+                      {submitter?.avatar || submitter?.name.charAt(0) || '?'}
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm">{submitter?.name || 'Unknown'}</p>
+                      <p className="text-xs text-muted-foreground">{submitter?.email}</p>
+                    </div>
+                  </div>
+                </TableCell>
+
+                {/* Expense Details */}
+                <TableCell>
+                  <div>
+                    <p className="font-medium text-sm line-clamp-1">{expense.title}</p>
+                    {expense.merchantName && (
+                      <p className="text-xs text-muted-foreground line-clamp-1">
+                        {expense.merchantName}
+                      </p>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      Submitted {formatDistanceToNow(new Date(expense.createdAt), { addSuffix: true })}
+                    </p>
+                  </div>
+                </TableCell>
+
+                {/* Category */}
+                <TableCell>
+                  <Badge variant="secondary" className="font-normal">
+                    {getCategoryName(expense.category)}
+                  </Badge>
+                </TableCell>
+
+                {/* Amount */}
+                <TableCell className="text-right">
+                  <div>
+                    <p className="font-semibold">
+                      {company.country.currency.symbol}
+                      {(expense.convertedAmount || expense.amount).toLocaleString('en-US', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </p>
+                    {expense.currency !== company.country.currency.code && (
+                      <p className="text-xs text-muted-foreground">
+                        {expense.currency} {expense.amount.toFixed(2)}
+                      </p>
+                    )}
+                  </div>
+                </TableCell>
+
+                {/* Date */}
+                <TableCell>
+                  <p className="text-sm">{format(new Date(expense.expenseDate), 'MMM d, yyyy')}</p>
+                </TableCell>
+
+                {/* Status */}
+                <TableCell>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        {getStatusBadge(expense)}
+                      </TooltipTrigger>
+                      {userAction && (
+                        <TooltipContent>
+                          <p>
+                            {userAction.status === 'approved' ? 'Approved' : 'Rejected'} on{' '}
+                            {format(new Date(userAction.timestamp), 'MMM d, yyyy')}
+                          </p>
+                          {userAction.comment && <p className="text-xs">{userAction.comment}</p>}
+                        </TooltipContent>
+                      )}
+                    </Tooltip>
+                  </TooltipProvider>
+                </TableCell>
+
+                {/* Actions */}
+                <TableCell>
+                  <div className="flex items-center justify-center gap-1">
+                    {showActions ? (
+                      <>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Link href={`/dashboard/expenses/${expense.id}`}>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                              </Link>
+                            </TooltipTrigger>
+                            <TooltipContent>View Details</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
+                                onClick={() => {
+                                  setSelectedExpense(expense);
+                                  setShowApproveDialog(true);
+                                }}
+                              >
+                                <CheckCircle2 className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Approve</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                onClick={() => {
+                                  setSelectedExpense(expense);
+                                  setShowRejectDialog(true);
+                                }}
+                              >
+                                <XCircle className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Reject</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </>
+                    ) : (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem asChild>
+                            <Link href={`/dashboard/expenses/${expense.id}`} className="flex items-center">
+                              <Eye className="mr-2 h-4 w-4" />
+                              View Details
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem disabled>
+                            <FileText className="mr-2 h-4 w-4" />
+                            Download Receipt
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
+                  </div>
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+    </div>
+  );
 
   return (
     <div className="min-h-screen">
@@ -268,7 +371,7 @@ export default function ApprovalsPage() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold">
-                    {recentlyProcessed.filter((e) => 
+                    {recentlyProcessed.filter((e) =>
                       e.approvalHistory.find((h) => h.approverId === user.id)?.status === 'approved'
                     ).length}
                   </p>
@@ -297,45 +400,59 @@ export default function ApprovalsPage() {
         </div>
 
         <Tabs defaultValue="pending" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="pending">
-              Pending Review
-              {pendingApprovals.length > 0 && (
-                <Badge className="ml-2 bg-amber-100 text-amber-700">{pendingApprovals.length}</Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="history">Recently Processed</TabsTrigger>
-          </TabsList>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <TabsList>
+              <TabsTrigger value="pending">
+                Pending Review
+                {pendingApprovalsAll.length > 0 && (
+                  <Badge className="ml-2 bg-amber-100 text-amber-700">{pendingApprovalsAll.length}</Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="history">Recently Processed</TabsTrigger>
+            </TabsList>
+
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">Filter by Team:</span>
+              <Select value={teamFilter} onValueChange={setTeamFilter}>
+                <SelectTrigger className="w-[180px]">
+                  <UsersIcon className="w-4 h-4 mr-2" />
+                  <SelectValue placeholder="All Teams" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Teams</SelectItem>
+                  {teamOptions.map(team => (
+                    <SelectItem key={team} value={team}>{team} Team</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
 
           <TabsContent value="pending">
             {pendingApprovals.length === 0 ? (
-              <Empty
-                icon={CheckCircle2}
-                title="All caught up!"
-                description="No expenses pending your approval"
-              />
+              <Empty>
+                <EmptyMedia variant="icon"><CheckCircle2 /></EmptyMedia>
+                <EmptyHeader>
+                  <EmptyTitle>All caught up!</EmptyTitle>
+                  <EmptyDescription>No expenses pending your approval</EmptyDescription>
+                </EmptyHeader>
+              </Empty>
             ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {pendingApprovals.map((expense) => (
-                  <ExpenseCard key={expense.id} expense={expense} showActions />
-                ))}
-              </div>
+              <ApprovalTable expenses={pendingApprovals} showActions />
             )}
           </TabsContent>
 
           <TabsContent value="history">
             {recentlyProcessed.length === 0 ? (
-              <Empty
-                icon={Clock}
-                title="No recent activity"
-                description="Your approval history will appear here"
-              />
+              <Empty>
+                <EmptyMedia variant="icon"><Clock /></EmptyMedia>
+                <EmptyHeader>
+                  <EmptyTitle>No recent activity</EmptyTitle>
+                  <EmptyDescription>Your approval history will appear here</EmptyDescription>
+                </EmptyHeader>
+              </Empty>
             ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {recentlyProcessed.map((expense) => (
-                  <ExpenseCard key={expense.id} expense={expense} showActions={false} />
-                ))}
-              </div>
+              <ApprovalTable expenses={recentlyProcessed} showActions={false} />
             )}
           </TabsContent>
         </Tabs>
