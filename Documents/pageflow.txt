@@ -1,0 +1,780 @@
+Reimbursement Management System - Simple Page Flow
+USER JOURNEY BY ROLE
+1. FIRST-TIME SIGNUP FLOW
+text
+
+┌─────────────────────┐
+│   Landing Page      │
+│  - Login Button     │
+│  - Sign Up Button   │
+└──────────┬──────────┘
+           │ Click "Sign Up"
+           ▼
+┌─────────────────────┐
+│  Signup Form Page   │
+│  - Full Name        │
+│  - Email            │
+│  - Password         │
+│  - Company Name     │
+│  - [Next] Button    │
+└──────────┬──────────┘
+           │ Click "Next"
+           ▼
+┌─────────────────────┐
+│ Country Selection   │
+│  - Search/Dropdown  │
+│  - Shows Currency   │
+│  - [Create] Button  │
+└──────────┬──────────┘
+           │ Click "Create Account"
+           ▼
+┌─────────────────────┐
+│  Admin Dashboard    │ ← Logged in as Admin
+└─────────────────────┘
+2. LOGIN FLOW
+text
+
+┌─────────────────────┐
+│   Landing Page      │
+└──────────┬──────────┘
+           │ Click "Login"
+           ▼
+┌─────────────────────┐
+│   Login Page        │
+│  - Email            │
+│  - Password         │
+│  - [Login] Button   │
+│  - Forgot Password? │
+└──────────┬──────────┘
+           │ Submit
+           ▼
+    Based on Role:
+    ┌───────┬───────┬──────────┐
+    ▼       ▼       ▼          ▼
+  Admin  Manager Employee  (First login?)
+Dashboard Dashboard Dashboard  → Change Password Page
+3. ADMIN PAGES
+text
+
+┌────────────────────────────────────────────┐
+│         ADMIN DASHBOARD (Main Page)        │
+│  ┌──────────────────────────────────────┐  │
+│  │ Header: Logo | Notifications | Profile│ │
+│  │ Sidebar Navigation:                   │ │
+│  │  - Dashboard (active)                 │ │
+│  │  - Expenses                           │ │
+│  │  - Users                              │ │
+│  │  - Approval Rules                     │ │
+│  │  - Reports                            │ │
+│  │  - Settings                           │ │
+│  └──────────────────────────────────────┘  │
+│                                            │
+│  Main Content:                             │
+│  ┌─────────┐ ┌─────────┐ ┌─────────┐      │
+│  │ Total   │ │ Pending │ │ This    │      │
+│  │ Expenses│ │ Amount  │ │ Month   │      │
+│  └─────────┘ └─────────┘ └─────────┘      │
+│                                            │
+│  📊 Charts & Graphs                        │
+│  📋 Recent Activity Table                  │
+│  ⚠️  Alerts/Notifications                  │
+│                                            │
+│  Quick Actions:                            │
+│  [+ Add User] [View All Expenses] [Reports]│
+└────────────────────────────────────────────┘
+           │
+           │ Click "Users"
+           ▼
+┌────────────────────────────────────────────┐
+│            USERS PAGE                      │
+│  Search: [_____________] [+ Add User]      │
+│                                            │
+│  Table:                                    │
+│  ┌──────────────────────────────────────┐  │
+│  │Name   │Email   │Role    │Manager│Edit││
+│  │Alice  │alice@..│Employee│Bob    │✏️ │ │
+│  │Bob    │bob@... │Manager │-      │✏️ │ │
+│  │Carol  │carol@..│Manager │-      │✏️ │ │
+│  └──────────────────────────────────────┘  │
+└────────────────┬───────────────────────────┘
+                 │ Click "+ Add User"
+                 ▼
+┌────────────────────────────────────────────┐
+│         CREATE USER MODAL/PAGE             │
+│  Full Name:     [________________]         │
+│  Email:         [________________]         │
+│  Role:          [Employee ▼]               │
+│  Assign Manager:[Bob (Manager) ▼]         │
+│  Department:    [________________]         │
+│                                            │
+│  [Cancel]  [Create User]                   │
+└────────────────┬───────────────────────────┘
+                 │ Click "Create User"
+                 ▼
+         (Returns to Users Page)
+           
+           
+         Click "Edit" on a user
+                 ▼
+┌────────────────────────────────────────────┐
+│          EDIT USER MODAL/PAGE              │
+│  Name:          [Alice Johnson___]         │
+│  Email:         alice@... (read-only)      │
+│  Role:          [Employee ▼]               │
+│  Manager:       [Bob ▼] (Change Manager)   │
+│  Status:        [Active ▼]                 │
+│                                            │
+│  [Delete User] [Cancel] [Update]           │
+└────────────────────────────────────────────┘
+
+
+         Click "Approval Rules"
+                 ▼
+┌────────────────────────────────────────────┐
+│       APPROVAL RULES PAGE                  │
+│  [+ Create New Rule]                       │
+│                                            │
+│  Existing Rules:                           │
+│  ┌──────────────────────────────────────┐  │
+│  │ Rule Name    │ Range    │ Type │ Edit││
+│  │ Small        │ $0-$500  │ Seq  │ ✏️  ││
+│  │ Medium       │$500-$2K  │ %    │ ✏️  ││
+│  │ Large        │ $2K+     │Hybrid│ ✏️  ││
+│  └──────────────────────────────────────┘  │
+└────────────────┬───────────────────────────┘
+                 │ Click "+ Create New Rule"
+                 ▼
+┌────────────────────────────────────────────┐
+│      CREATE APPROVAL RULE PAGE             │
+│                                            │
+│  Step 1: Basic Info                        │
+│    Rule Name:     [_______________]        │
+│    Amount Range:  [$____] to [$____]      │
+│                                            │
+│  Step 2: Manager Approval                  │
+│    ☑ Require employee's manager approval  │
+│                                            │
+│  Step 3: Approval Type                     │
+│    ○ Sequential Multi-level                │
+│    ○ Percentage-based                      │
+│    ○ Specific Approver                     │
+│    ○ Hybrid                                │
+│                                            │
+│  Step 4: Configure Approvers               │
+│    (Changes based on type selected)        │
+│                                            │
+│  [Cancel] [Save Rule]                      │
+└────────────────────────────────────────────┘
+
+
+         Click "Expenses"
+                 ▼
+┌────────────────────────────────────────────┐
+│         ALL EXPENSES PAGE (Admin View)     │
+│  Filters:                                  │
+│  Status:[All ▼] Employee:[All ▼] Date:[▼] │
+│  [Search: ___________]                     │
+│                                            │
+│  Table:                                    │
+│  ┌──────────────────────────────────────┐  │
+│  │Date│Employee│Amount│Category│Status│→││
+│  │1/15│Alice   │$3,500│Travel  │✓    │ ││
+│  │1/14│Bob     │$1,200│Food    │⏳   │ ││
+│  │1/13│Carol   │$890  │Supplies│✗    │ ││
+│  └──────────────────────────────────────┘  │
+│                                            │
+│  [Export CSV] [Export PDF]                 │
+└────────────────┬───────────────────────────┘
+                 │ Click on any expense
+                 ▼
+┌────────────────────────────────────────────┐
+│       EXPENSE DETAIL PAGE (Admin)          │
+│  (Same as Employee view +)                 │
+│  [Override Approval]                       │
+│  [Force Approve] [Force Reject]            │
+└────────────────────────────────────────────┘
+
+
+         Click "Reports"
+                 ▼
+┌────────────────────────────────────────────┐
+│            REPORTS PAGE                    │
+│  Report Type:                              │
+│    ○ Summary Report                        │
+│    ○ Detailed Expense Report               │
+│    ○ User-wise Report                      │
+│    ○ Category-wise Report                  │
+│                                            │
+│  Filters:                                  │
+│    Date Range: [____] to [____]           │
+│    Department: [All ▼]                     │
+│    Category:   [All ▼]                     │
+│    Status:     [All ▼]                     │
+│                                            │
+│  [Generate Report] [Export] [Schedule]     │
+│                                            │
+│  Report Results (after generation):        │
+│  📊 Charts and Tables                      │
+└────────────────────────────────────────────┘
+4. EMPLOYEE PAGES
+text
+
+┌────────────────────────────────────────────┐
+│       EMPLOYEE DASHBOARD (Main Page)       │
+│  ┌──────────────────────────────────────┐  │
+│  │ Header: Logo | Notifications | Profile│ │
+│  │ Sidebar:                              │ │
+│  │  - Dashboard                          │ │
+│  │  - My Expenses                        │ │
+│  │  - Submit Expense                     │ │
+│  │  - Profile                            │ │
+│  └──────────────────────────────────────┘  │
+│                                            │
+│  Summary Cards:                            │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐   │
+│  │ Submitted│ │ Approved │ │ Pending  │   │
+│  │ This Month│ │ Amount   │ │ Amount   │   │
+│  └──────────┘ └──────────┘ └──────────┘   │
+│                                            │
+│  Recent Expenses (last 5):                 │
+│  ┌──────────────────────────────────────┐  │
+│  │Date │Desc      │Amount│Status        │  │
+│  │1/15 │Flight... │$3,500│✓ Approved    │  │
+│  │1/10 │Supplies  │$250  │⏳ Pending    │  │
+│  └──────────────────────────────────────┘  │
+│                                            │
+│  Quick Actions:                            │
+│  [+ Submit Expense] [📷 Scan Receipt]      │
+└────────────────┬───────────────────────────┘
+                 │ Click "Submit Expense"
+                 ▼
+┌────────────────────────────────────────────┐
+│        SUBMIT EXPENSE PAGE                 │
+│                                            │
+│  Amount:       [$________]                 │
+│  Currency:     [USD ▼]                     │
+│  Category:     [Select... ▼]               │
+│    - Travel                                │
+│    - Food                                  │
+│    - Accommodation                         │
+│    - Supplies                              │
+│    - Transportation                        │
+│    - Other                                 │
+│                                            │
+│  Date:         [📅 01/15/2024]             │
+│                                            │
+│  Description:                              │
+│  [________________________________]         │
+│  [________________________________]         │
+│                                            │
+│  Receipt:      [📎 Upload File]            │
+│                or                          │
+│                [📷 Take Photo]             │
+│                                            │
+│  [Cancel] [Submit Expense]                 │
+└────────────────┬───────────────────────────┘
+                 │ Click "Submit"
+                 ▼
+┌────────────────────────────────────────────┐
+│          SUCCESS PAGE/MODAL                │
+│                                            │
+│           ✓ Expense Submitted!             │
+│                                            │
+│  Your expense for $3,500 has been          │
+│  submitted and is awaiting approval.       │
+│                                            │
+│  Current Status: With Bob (Manager)        │
+│                                            │
+│  [View Expense] [Submit Another] [Home]    │
+└────────────────────────────────────────────┘
+
+
+         Click "📷 Scan Receipt"
+                 ▼
+┌────────────────────────────────────────────┐
+│         OCR SCAN PAGE (Mobile)             │
+│                                            │
+│  ┌──────────────────────────────────────┐  │
+│  │                                      │  │
+│  │        📷 CAMERA VIEW                │  │
+│  │                                      │  │
+│  │   Position receipt within frame      │  │
+│  │                                      │  │
+│  └──────────────────────────────────────┘  │
+│                                            │
+│  [💡 Flash] [🔄 Switch Camera] [🖼️ Gallery]│
+│                                            │
+│  [◯ Capture]                               │
+└────────────────┬───────────────────────────┘
+                 │ Take Photo
+                 ▼
+┌────────────────────────────────────────────┐
+│         REVIEW PHOTO PAGE                  │
+│                                            │
+│  ┌──────────────────────────────────────┐  │
+│  │  [Preview of captured receipt]       │  │
+│  └──────────────────────────────────────┘  │
+│                                            │
+│  [Retake] [Use This Photo]                 │
+└────────────────┬───────────────────────────┘
+                 │ Click "Use This Photo"
+                 ▼
+┌────────────────────────────────────────────┐
+│      PROCESSING PAGE                       │
+│                                            │
+│         ⏳ Processing Receipt...            │
+│         Extracting data...                 │
+│                                            │
+│         [Progress bar animation]           │
+└────────────────┬───────────────────────────┘
+                 │ After OCR processing
+                 ▼
+┌────────────────────────────────────────────┐
+│    REVIEW EXTRACTED DATA PAGE              │
+│                                            │
+│  ⚠️ Please review and correct if needed    │
+│                                            │
+│  Merchant:     [Restaurant XYZ___]         │
+│  Amount:       [$27.80____] ✓ High conf.  │
+│  Currency:     [USD ▼]                     │
+│  Date:         [📅 01/15/2024] ⚠️ Verify   │
+│  Category:     [Food ▼] (Auto-detected)    │
+│  Description:  [Restaurant XYZ - Lunch_]   │
+│                                            │
+│  Receipt:      ✓ Attached                  │
+│                                            │
+│  [Cancel] [Submit Expense]                 │
+└────────────────────────────────────────────┘
+
+
+         Click "My Expenses"
+                 ▼
+┌────────────────────────────────────────────┐
+│          MY EXPENSES PAGE                  │
+│                                            │
+│  Filters:                                  │
+│  Status: [All ▼] Date: [Last 30 days ▼]   │
+│  Category: [All ▼] [Search: _____]         │
+│                                            │
+│  Table/List:                               │
+│  ┌──────────────────────────────────────┐  │
+│  │ 1/15 Flight tickets      $3,500      │  │
+│  │      ✓ APPROVED          (3/3 approved)│ │
+│  │      [View Details →]                 │  │
+│  ├──────────────────────────────────────┤  │
+│  │ 1/10 Office supplies     $250        │  │
+│  │      ⏳ PENDING           (1/2 approved)│ │
+│  │      [View Details →]                 │  │
+│  ├──────────────────────────────────────┤  │
+│  │ 1/05 Client dinner       $180        │  │
+│  │      ✗ REJECTED                       │  │
+│  │      [View Details →] [Resubmit]      │  │
+│  └──────────────────────────────────────┘  │
+│                                            │
+│  Showing 10 of 45 expenses                 │
+│  [1] [2] [3] [4] [5] →                     │
+└────────────────┬───────────────────────────┘
+                 │ Click "View Details"
+                 ▼
+┌────────────────────────────────────────────┐
+│       EXPENSE DETAIL PAGE (Employee)       │
+│                                            │
+│  Expense #12345                            │
+│  Status: ⏳ PENDING APPROVAL                │
+│                                            │
+│  Details:                                  │
+│  ┌──────────────────────────────────────┐  │
+│  │ Amount:      €3,500 ($3,815 USD)     │  │
+│  │ Category:    Travel                   │  │
+│  │ Date:        Jan 15, 2024             │  │
+│  │ Submitted:   Jan 15, 2024 10:30 AM   │  │
+│  │ Description: Flight tickets to...     │  │
+│  │                                       │  │
+│  │ Receipt: [📄 View Receipt]            │  │
+│  └──────────────────────────────────────┘  │
+│                                            │
+│  APPROVAL TIMELINE:                        │
+│  ┌──────────────────────────────────────┐  │
+│  │ ✓ Submitted                           │  │
+│  │   Jan 15, 10:30 AM - By You           │  │
+│  │                                       │  │
+│  │ ✓ Manager Approval                    │  │
+│  │   Jan 15, 11:45 AM - Bob Johnson      │  │
+│  │   💬 "Approved - valid business trip" │  │
+│  │                                       │  │
+│  │ ⏳ Finance Approval                    │  │
+│  │   PENDING - Carol Smith               │  │
+│  │                                       │  │
+│  │ ⏸️ Director Approval                   │  │
+│  │   WAITING - Dan Brown                 │  │
+│  └──────────────────────────────────────┘  │
+│                                            │
+│  [Withdraw Expense] [Back to List]         │
+└────────────────────────────────────────────┘
+5. MANAGER PAGES
+text
+
+┌────────────────────────────────────────────┐
+│        MANAGER DASHBOARD (Main Page)       │
+│  ┌──────────────────────────────────────┐  │
+│  │ Header: Logo | Notifications (3) | 👤 │ │
+│  │ Sidebar:                              │ │
+│  │  - Dashboard                          │ │
+│  │  - Pending Approvals (3) ⚠️           │ │
+│  │  - Team Expenses                      │ │
+│  │  - My Expenses                        │ │
+│  │  - Submit Expense                     │ │
+│  └──────────────────────────────────────┘  │
+│                                            │
+│  Summary Cards:                            │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐   │
+│  │ Pending  │ │ Team     │ │ Approved │   │
+│  │ Approvals│ │ Expenses │ │ This Week│   │
+│  │    3     │ │ $12,450  │ │    8     │   │
+│  └──────────┘ └──────────┘ └──────────┘   │
+│                                            │
+│  🔴 PENDING APPROVALS (High Priority):     │
+│  ┌──────────────────────────────────────┐  │
+│  │ Alice  │$3,500│Travel  │2h ago │✓│✗││ │
+│  │ Charlie│$1,200│Food    │1d ago │✓│✗││ │
+│  │ Diana  │$890  │Supplies│3d ago │✓│✗││ │
+│  └──────────────────────────────────────┘  │
+│                                            │
+│  📊 Team Spending Chart (This Month)       │
+│  Recent Team Activity...                   │
+└────────────────┬───────────────────────────┘
+                 │ Click "Pending Approvals"
+                 ▼
+┌────────────────────────────────────────────┐
+│        PENDING APPROVALS PAGE              │
+│                                            │
+│  Filter: [All Employees ▼] [All Categories ▼]│
+│  Sort: [Oldest First ▼]                    │
+│                                            │
+│  List of Pending Expenses:                 │
+│  ┌──────────────────────────────────────┐  │
+│  │ Alice Johnson - $3,500               │  │
+│  │ Travel - Flight tickets to Berlin    │  │
+│  │ Submitted: 2 hours ago               │  │
+│  │ [View Details] [Quick Approve] [Reject]│ │
+│  ├──────────────────────────────────────┤  │
+│  │ Charlie Brown - $1,200               │  │
+│  │ Food - Team lunch expenses           │  │
+│  │ Submitted: 1 day ago                 │  │
+│  │ [View Details] [Quick Approve] [Reject]│ │
+│  ├──────────────────────────────────────┤  │
+│  │ Diana Prince - $890                  │  │
+│  │ Supplies - Office equipment          │  │
+│  │ Submitted: 3 days ago ⚠️ Overdue     │  │
+│  │ [View Details] [Quick Approve] [Reject]│ │
+│  └──────────────────────────────────────┘  │
+└────────────────┬───────────────────────────┘
+                 │ Click "View Details"
+                 ▼
+┌────────────────────────────────────────────┐
+│   EXPENSE APPROVAL DETAIL PAGE (Manager)   │
+│                                            │
+│  Employee: Alice Johnson                   │
+│  Submitted: Jan 15, 2024 10:30 AM          │
+│                                            │
+│  Expense Details:                          │
+│  ┌──────────────────────────────────────┐  │
+│  │ Original Amount: €3,500              │  │
+│  │ Converted Amount: $3,815 USD         │  │
+│  │ Category: Travel                      │  │
+│  │ Date: Jan 15, 2024                    │  │
+│  │ Description: Flight tickets to Berlin │  │
+│  │              conference               │  │
+│  │                                       │  │
+│  │ Receipt: [📄 View Receipt] ← Click to │  │
+│  │          open PDF/image in new tab    │  │
+│  └──────────────────────────────────────┘  │
+│                                            │
+│  Approval History:                         │
+│  ┌──────────────────────────────────────┐  │
+│  │ ✓ Submitted by Alice on Jan 15 10:30 │  │
+│  │ ⏳ Awaiting your approval (Manager)   │  │
+│  └──────────────────────────────────────┘  │
+│                                            │
+│  Your Decision:                            │
+│  Comments (optional):                      │
+│  [________________________________]         │
+│  [________________________________]         │
+│                                            │
+│  [← Back] [❌ Reject] [✓ Approve]          │
+└────────────────┬───────────────────────────┘
+                 │ Click "✓ Approve"
+                 ▼
+┌────────────────────────────────────────────┐
+│         APPROVAL CONFIRMATION              │
+│                                            │
+│  ✓ Expense Approved Successfully!          │
+│                                            │
+│  Alice's expense for $3,815 has been       │
+│  approved and moved to the next approver.  │
+│                                            │
+│  Next: Finance Manager (Carol Smith)       │
+│                                            │
+│  [View Next Approval] [Back to Pending]    │
+└────────────────────────────────────────────┘
+
+
+                 Click "❌ Reject" instead
+                 ▼
+┌────────────────────────────────────────────┐
+│         REJECTION MODAL                    │
+│                                            │
+│  Reject Alice's expense for $3,815?        │
+│                                            │
+│  ⚠️ This will reject the entire expense.   │
+│                                            │
+│  Reason for rejection (required):          │
+│  [________________________________]         │
+│  [________________________________]         │
+│  [________________________________]         │
+│                                            │
+│  [Cancel] [Confirm Rejection]              │
+└────────────────┬───────────────────────────┘
+                 │ Click "Confirm Rejection"
+                 ▼
+┌────────────────────────────────────────────┐
+│         REJECTION CONFIRMED                │
+│                                            │
+│  ✗ Expense Rejected                        │
+│                                            │
+│  Alice has been notified of the rejection. │
+│                                            │
+│  [Back to Pending Approvals]               │
+└────────────────────────────────────────────┘
+
+
+         Click "Team Expenses"
+                 ▼
+┌────────────────────────────────────────────┐
+│          TEAM EXPENSES PAGE                │
+│                                            │
+│  Team: Bob's Direct Reports (5 members)    │
+│                                            │
+│  Filters:                                  │
+│  Employee: [All ▼] Status: [All ▼]         │
+│  Date: [This Month ▼] Category: [All ▼]    │
+│                                            │
+│  📊 Team Summary (This Month):             │
+│  Total: $12,450 | Approved: $10,200        │
+│  Pending: $2,250                           │
+│                                            │
+│  Expenses by Category (Chart):             │
+│  [Bar/Pie chart visualization]             │
+│                                            │
+│  All Team Expenses:                        │
+│  ┌──────────────────────────────────────┐  │
+│  │Date│Employee│Amount│Category│Status │  │
+│  │1/15│Alice   │$3,500│Travel  │✓      │  │
+│  │1/14│Charlie │$1,200│Food    │⏳     │  │
+│  │1/13│Diana   │$890  │Supplies│⏳     │  │
+│  │1/12│Edward  │$5,000│Equipment│✗     │  │
+│  └──────────────────────────────────────┘  │
+│                                            │
+│  [Export Report]                           │
+└────────────────────────────────────────────┘
+6. COMMON PAGES (ALL ROLES)
+text
+
+┌────────────────────────────────────────────┐
+│           PROFILE PAGE                     │
+│                                            │
+│  Personal Information:                     │
+│  ┌──────────────────────────────────────┐  │
+│  │ Full Name:    [Alice Johnson_____]   │  │
+│  │ Email:        alice@company.com      │  │
+│  │ Role:         Employee               │  │
+│  │ Department:   Engineering            │  │
+│  │ Manager:      Bob Johnson            │  │
+│  │ Joined:       Dec 15, 2023           │  │
+│  └──────────────────────────────────────┘  │
+│                                            │
+│  Change Password:                          │
+│  ┌──────────────────────────────────────┐  │
+│  │ Current Password: [___________]      │  │
+│  │ New Password:     [___________]      │  │
+│  │ Confirm Password: [___________]      │  │
+│  │ [Update Password]                    │  │
+│  └──────────────────────────────────────┘  │
+│                                            │
+│  Notification Preferences:                 │
+│  ☑ Email notifications                     │
+│  ☑ In-app notifications                    │
+│  ☐ Push notifications (mobile)             │
+│                                            │
+│  [Save Changes] [Cancel]                   │
+└────────────────────────────────────────────┘
+
+
+┌────────────────────────────────────────────┐
+│        NOTIFICATIONS PAGE/PANEL            │
+│                                            │
+│  Tabs: [Unread (3)] [All]                 │
+│                                            │
+│  ┌──────────────────────────────────────┐  │
+│  │ ○ New expense awaiting approval      │  │
+│  │   Alice submitted expense for $3,500 │  │
+│  │   2 hours ago                [View]  │  │
+│  ├──────────────────────────────────────┤  │
+│  │ ○ Expense approved                   │  │
+│  │   Your expense for $1,200 was approved│ │
+│  │   1 day ago                  [View]  │  │
+│  ├──────────────────────────────────────┤  │
+│  │ ○ Reminder                           │  │
+│  │   3 expenses pending your review     │  │
+│  │   3 days ago            [Review Now] │  │
+│  └──────────────────────────────────────┘  │
+│                                            │
+│  [Mark All as Read] [Clear All]            │
+└────────────────────────────────────────────┘
+
+
+┌────────────────────────────────────────────┐
+│          SETTINGS PAGE (Admin/Manager)     │
+│                                            │
+│  Tabs:                                     │
+│  [Company] [Approval Rules] [Integrations] │
+│                                            │
+│  Company Settings (Active Tab):            │
+│  ┌──────────────────────────────────────┐  │
+│  │ Company Name:   [Acme Corp______]    │  │
+│  │ Country:        United States        │  │
+│  │ Currency:       USD (read-only)      │  │
+│  │ Fiscal Year:    [January ▼]          │  │
+│  │ Time Zone:      [EST ▼]              │  │
+│  │                                       │  │
+│  │ Expense Policies:                     │  │
+│  │ Max expense amount: [$_________]     │  │
+│  │ Receipt required for: [$50+ ▼]       │  │
+│  │ Approval timeout: [5 days ▼]         │  │
+│  │                                       │  │
+│  │ [Save Changes]                        │  │
+│  └──────────────────────────────────────┘  │
+└────────────────────────────────────────────┘
+7. ERROR/SPECIAL PAGES
+text
+
+┌────────────────────────────────────────────┐
+│           404 - PAGE NOT FOUND             │
+│                                            │
+│              🔍 Oops!                      │
+│                                            │
+│       The page you're looking for          │
+│       doesn't exist.                       │
+│                                            │
+│       [← Back to Dashboard]                │
+└────────────────────────────────────────────┘
+
+
+┌────────────────────────────────────────────┐
+│           403 - ACCESS DENIED              │
+│                                            │
+│              🚫 Access Denied              │
+│                                            │
+│   You don't have permission to view        │
+│   this page.                               │
+│                                            │
+│   Contact your administrator if you        │
+│   think this is a mistake.                 │
+│                                            │
+│   [← Back to Dashboard]                    │
+└────────────────────────────────────────────┘
+
+
+┌────────────────────────────────────────────┐
+│        FORGOT PASSWORD PAGE                │
+│                                            │
+│  Reset Your Password                       │
+│                                            │
+│  Enter your email address and we'll        │
+│  send you a link to reset your password.   │
+│                                            │
+│  Email: [_____________________]            │
+│                                            │
+│  [Send Reset Link]                         │
+│                                            │
+│  [← Back to Login]                         │
+└────────────────┬───────────────────────────┘
+                 │ Click "Send Reset Link"
+                 ▼
+┌────────────────────────────────────────────┐
+│        EMAIL SENT CONFIRMATION             │
+│                                            │
+│              ✓ Email Sent!                 │
+│                                            │
+│  Check your inbox for a password           │
+│  reset link. It will expire in 1 hour.     │
+│                                            │
+│  Didn't receive it?                        │
+│  [Resend Email]                            │
+│                                            │
+│  [← Back to Login]                         │
+└────────────────────────────────────────────┘
+
+
+┌────────────────────────────────────────────┐
+│        RESET PASSWORD PAGE                 │
+│  (Accessed via email link)                 │
+│                                            │
+│  Create New Password                       │
+│                                            │
+│  New Password:     [___________]           │
+│  Confirm Password: [___________]           │
+│                                            │
+│  Password must:                            │
+│  ✓ Be at least 8 characters                │
+│  ✓ Contain 1 uppercase letter              │
+│  ✓ Contain 1 number                        │
+│                                            │
+│  [Reset Password]                          │
+└────────────────────────────────────────────┘
+NAVIGATION FLOW SUMMARY
+Employee Flow:
+text
+
+Login → Employee Dashboard → Submit Expense → My Expenses → Profile
+         ↓                      ↓
+    Scan Receipt           View Details
+Manager Flow:
+text
+
+Login → Manager Dashboard → Pending Approvals → Approve/Reject
+         ↓                      ↓
+    Team Expenses          My Expenses (as employee)
+Admin Flow:
+text
+
+Login → Admin Dashboard → Users → Expenses → Approval Rules → Reports
+         ↓                  ↓        ↓            ↓             ↓
+    Analytics         Create/Edit  View All    Configure    Generate
+                                   Override
+MOBILE APP PAGE FLOW (SIMPLIFIED)
+text
+
+┌─────────────┐
+│  Splash     │
+│  Screen     │
+└──────┬──────┘
+       ▼
+┌─────────────┐
+│Login/Signup │
+└──────┬──────┘
+       ▼
+┌─────────────────────────────────┐
+│    BOTTOM TAB NAVIGATION        │
+├─────────┬─────────┬─────────────┤
+│  Home   │Expenses │  Profile    │
+└─────┬───┴────┬────┴─────┬───────┘
+      ▼        ▼          ▼
+   Dashboard  List     Settings
+               │
+               ▼
+          ┌─────────┐
+          │+ Button │ (Floating Action Button)
+          └────┬────┘
+               ├── Manual Entry
+               └── Scan Receipt
