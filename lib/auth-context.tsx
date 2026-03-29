@@ -23,13 +23,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
   const [user, setUser] = useState<User | null>(null);
   const [company, setCompany] = useState<Company | null>(null);
-  const isLoading = status === 'loading';
+  const [isSyncing, setIsSyncing] = useState(false);
+  const isLoading = status === 'loading' || isSyncing;
 
   // Sync NextAuth session with local state
   useEffect(() => {
     const syncUser = async () => {
       if (session?.user) {
+        setIsSyncing(true);
         try {
+          // Set initial user from session as fallback
+          const sessionUser = {
+            id: session.user.id,
+            name: session.user.name,
+            email: session.user.email,
+            role: session.user.role || 'employee',
+            companyId: session.user.companyId || 'company-1',
+            department: session.user.department,
+            managerId: session.user.managerId,
+          } as User;
+          
+          setUser(sessionUser);
+
           // Fetch full user details from API
           const response = await fetch(`/api/users/${session.user.id}`);
           if (response.ok) {
@@ -60,9 +75,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             managerId: session.user.managerId,
           } as User);
         }
+        } finally {
+          setIsSyncing(false);
+        }
       } else {
         setUser(null);
         setCompany(null);
+        setIsSyncing(false);
       }
     };
 

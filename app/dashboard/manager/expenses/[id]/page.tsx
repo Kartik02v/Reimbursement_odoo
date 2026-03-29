@@ -56,8 +56,8 @@ export default function ExpenseDetailPage({ params }: { params: Promise<{ id: st
   }
 
   const category = categories.find((c) => c.id === expense.category);
-  const submitter = users.find((u) => u.id === expense.submittedBy);
-  const workflow = workflows.find((w) => w.id === expense.workflowId);
+  const submitter = expense.submitter || users.find((u) => u.id === expense.submittedBy);
+  const workflow = expense.workflow || workflows.find((w) => w.id === expense.workflowId);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -315,7 +315,7 @@ export default function ExpenseDetailPage({ params }: { params: Promise<{ id: st
                     const isPending = expense.currentStepIndex === index && expense.status === 'pending';
                     const isFuture = index > expense.currentStepIndex && expense.status === 'pending';
                     const approverNames = step.approvers
-                      .map((id) => users.find((u) => u.id === id)?.name)
+                      .map((id: string) => users.find((u) => u.id === id)?.name)
                       .filter(Boolean)
                       .join(', ');
 

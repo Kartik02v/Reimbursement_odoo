@@ -1,5 +1,5 @@
-import "dotenv/config";
 import { PrismaClient, UserRole, ExpenseStatus, ApprovalStepStatus, ApprovalType } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
@@ -19,8 +19,12 @@ async function main() {
         currency: { code: 'USD', symbol: '$', name: 'US Dollar' },
       },
       createdAt: new Date('2024-01-01'),
+      updatedAt: new Date('2024-01-01'),
     },
   });
+
+  // Hashed password for all mock users
+  const hashedPassword = await bcrypt.hash('password123', 12);
 
   // 2. Users (Ordered by manager dependency)
   const usersData = [
@@ -29,6 +33,7 @@ async function main() {
       email: 'admin@acme.com',
       name: 'Sarah Johnson',
       role: UserRole.admin,
+      password: hashedPassword,
       companyId: 'company-1',
       department: 'Operations',
       avatar: 'SJ',
@@ -38,6 +43,7 @@ async function main() {
       email: 'manager@acme.com',
       name: 'Michael Chen',
       role: UserRole.manager,
+      password: hashedPassword,
       companyId: 'company-1',
       managerId: 'user-1',
       department: 'Engineering',
@@ -48,6 +54,7 @@ async function main() {
       email: 'manager2@acme.com',
       name: 'Emily Davis',
       role: UserRole.manager,
+      password: hashedPassword,
       companyId: 'company-1',
       managerId: 'user-1',
       department: 'Sales',
@@ -58,6 +65,7 @@ async function main() {
       email: 'employee@acme.com',
       name: 'James Wilson',
       role: UserRole.employee,
+      password: hashedPassword,
       companyId: 'company-1',
       managerId: 'user-2',
       department: 'Engineering',
@@ -68,6 +76,7 @@ async function main() {
       email: 'employee2@acme.com',
       name: 'Lisa Anderson',
       role: UserRole.employee,
+      password: hashedPassword,
       companyId: 'company-1',
       managerId: 'user-2',
       department: 'Engineering',
@@ -78,6 +87,7 @@ async function main() {
       email: 'employee3@acme.com',
       name: 'Robert Brown',
       role: UserRole.employee,
+      password: hashedPassword,
       companyId: 'company-1',
       managerId: 'user-3',
       department: 'Sales',

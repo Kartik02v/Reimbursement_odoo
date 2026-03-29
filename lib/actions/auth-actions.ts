@@ -78,7 +78,7 @@ export async function signupAction(data: {
       data: {
         userId: user.id,
         userName: user.name,
-        action: 'USER_CREATED',
+        actionType: 'USER_CREATED',
         entityType: 'User',
         entityId: user.id,
         entityName: user.name,

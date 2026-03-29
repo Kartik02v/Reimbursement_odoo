@@ -74,6 +74,17 @@ export interface Expense {
   createdAt: Date;
   updatedAt: Date;
   rejectionReason?: string;
+  submitter?: {
+    id: string;
+    name: string;
+    email: string;
+    role?: string;
+  };
+  workflow?: {
+    id: string;
+    name: string;
+    steps: any[];
+  };
 }
 
 export interface ApprovalHistoryItem {

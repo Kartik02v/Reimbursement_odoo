@@ -60,11 +60,13 @@ export function ExpenseProvider({ children }: { children: React.ReactNode }) {
         setCategories(categoriesData.data || []);
       }
 
-      // Fetch users
-      const usersRes = await fetch('/api/users');
-      if (usersRes.ok) {
-        const usersData = await usersRes.json();
-        setUsers(usersData.data || []);
+      // Fetch users (only for admin and managers)
+      if (user.role === 'admin' || user.role === 'manager') {
+        const usersRes = await fetch('/api/users');
+        if (usersRes.ok) {
+          const usersData = await usersRes.json();
+          setUsers(usersData.data || []);
+        }
       }
 
       // Fetch notifications

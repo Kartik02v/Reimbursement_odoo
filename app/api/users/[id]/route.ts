@@ -10,12 +10,13 @@ import { updateUserSchema } from '@/lib/validations';
 // GET /api/users/[id] - Get user by ID
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     // TODO: Add session check
     const user = await prisma.user.findUnique({
-      where: { id: params.id },
+      where: { id },
       select: {
         id: true,
         name: true,
@@ -62,15 +63,16 @@ export async function GET(
 // PATCH /api/users/[id] - Update user
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     // TODO: Add session check and authorization
     const body = await req.json();
     const validatedData = updateUserSchema.parse(body);
 
     const user = await prisma.user.update({
-      where: { id: params.id },
+      where: { id },
       data: validatedData,
       select: {
         id: true,
@@ -87,7 +89,7 @@ export async function PATCH(
     // Create audit log
     await prisma.auditLog.create({
       data: {
-        userId: params.id,
+        userId: id,
         userName: user.name,
         actionType: 'USER_UPDATED',
         entityType: 'user',
@@ -110,23 +112,24 @@ export async function PATCH(
 // DELETE /api/users/[id] - Delete user (admin only)
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     // TODO: Add admin authorization check
     await prisma.user.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     // Create audit log
     await prisma.auditLog.create({
       data: {
-        userId: params.id,
+        userId: id,
         userName: 'Unknown',
         actionType: 'USER_DELETED',
         entityType: 'user',
-        entityId: params.id,
-        entityName: params.id,
+        entityId: id,
+        entityName: id,
         companyId: 'company-1',
         newValue: JSON.stringify({
           timestamp: new Date().toISOString(),
