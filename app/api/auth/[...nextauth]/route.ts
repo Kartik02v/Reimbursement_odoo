@@ -18,14 +18,17 @@ declare module 'next-auth' {
       companyId: string;
       department?: string;
       managerId?: string;
+      permissions?: any;
     };
   }
 
   interface User {
-    role: 'admin' | 'manager' | 'employee';
-    companyId: string;
+    id?: string;
+    role?: 'admin' | 'manager' | 'employee';
+    companyId?: string;
     department?: string;
     managerId?: string;
+    permissions?: any;
   }
 }
 
@@ -36,6 +39,7 @@ declare module 'next-auth/jwt' {
     companyId: string;
     department?: string;
     managerId?: string;
+    permissions?: any;
   }
 }
 
@@ -65,7 +69,7 @@ export const authConfig: NextAuthConfig = {
         try {
           // Find user by email
           const user = await prisma.user.findUnique({
-            where: { email: credentials.email },
+            where: { email: credentials.email as string },
             include: {
               company: true,
             },
@@ -77,7 +81,7 @@ export const authConfig: NextAuthConfig = {
 
           // Verify password
           const isValid = await comparePasswords(
-            credentials.password,
+            credentials.password as string,
             user.password
           );
 
@@ -94,6 +98,7 @@ export const authConfig: NextAuthConfig = {
             companyId: user.companyId,
             department: user.department || undefined,
             managerId: user.managerId || undefined,
+            permissions: user.permissions || {},
           };
         } catch (error) {
           console.error('Auth error:', error);
@@ -125,11 +130,12 @@ export const authConfig: NextAuthConfig = {
     async jwt({ token, user, trigger, session }) {
       // Initial sign in
       if (user) {
-        token.id = user.id;
-        token.role = user.role;
-        token.companyId = user.companyId;
+        token.id = user.id!;
+        token.role = user.role!;
+        token.companyId = user.companyId!;
         token.department = user.department;
         token.managerId = user.managerId;
+        token.permissions = user.permissions;
       }
 
       // Handle session updates
@@ -141,11 +147,12 @@ export const authConfig: NextAuthConfig = {
     },
     async session({ session, token }) {
       if (token && session.user) {
-        session.user.id = token.id;
-        session.user.role = token.role;
-        session.user.companyId = token.companyId;
-        session.user.department = token.department;
-        session.user.managerId = token.managerId;
+        session.user.id = token.id as string;
+        session.user.role = token.role as 'admin' | 'manager' | 'employee';
+        session.user.companyId = token.companyId as string;
+        session.user.department = token.department as string | undefined;
+        session.user.managerId = token.managerId as string | undefined;
+        session.user.permissions = token.permissions;
       }
 
       return session;
@@ -202,7 +209,7 @@ export const authConfig: NextAuthConfig = {
       }
     },
   },
-  debug: process.env.NODE_ENV === 'development',
+  debug: false,
 };
 
 export const {

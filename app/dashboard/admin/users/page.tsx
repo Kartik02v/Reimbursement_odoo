@@ -70,6 +70,7 @@ export default function UsersPage() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    password: '',
     role: 'employee' as UserRole,
     managerId: '',
   });
@@ -132,6 +133,7 @@ export default function UsersPage() {
     createUser({
       name: formData.name,
       email: formData.email,
+      password: formData.password,
       role: formData.role,
       managerId: (formData.managerId && formData.managerId !== 'none') ? formData.managerId : undefined,
       companyId: company.id,
@@ -165,6 +167,7 @@ export default function UsersPage() {
     setFormData({
       name: '',
       email: '',
+      password: '',
       role: 'employee',
       managerId: 'none',
     });
@@ -194,6 +197,7 @@ export default function UsersPage() {
     setFormData({
       name: userToEdit.name,
       email: userToEdit.email,
+      password: '', // Password remains empty unless changed (though not implemented in EDIT yet)
       role: userToEdit.role,
       managerId: userToEdit.managerId || 'none',
     });
@@ -382,6 +386,16 @@ export default function UsersPage() {
                 placeholder="john@company.com"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="password">Password</FieldLabel>
+              <Input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               />
             </Field>
             <Field>

@@ -59,11 +59,16 @@ export async function signupAction(data: {
         name: validatedData.name,
         email: validatedData.email,
         password: hashedPassword,
-        role: validatedData.role || 'employee',
+        role: validatedData.role || 'admin',
         department: validatedData.department,
         managerId: validatedData.managerId,
         companyId: company.id,
-        permissions: {},
+        permissions: {
+          canViewAllExpenses: true,
+          canApproveAllExpenses: true,
+          canManageUsers: true,
+          canConfigureWorkflows: true,
+        },
       },
       select: {
         id: true,
@@ -72,6 +77,9 @@ export async function signupAction(data: {
         role: true,
       },
     });
+
+    // Seed default data for the new company
+    await seedCompanyData(company.id);
 
     // Create audit log
     await prisma.auditLog.create({
@@ -183,5 +191,59 @@ export async function updateUserProfile(
   } catch (error: any) {
     console.error('Update profile error:', error);
     return { success: false, error: error.message };
+  }
+}
+/**
+ * Seed default data for a new company
+ */
+async function seedCompanyData(companyId: string) {
+  try {
+    // 1. Create default categories
+    const defaultCategories = [
+      { name: 'Travel', icon: 'Plane' },
+      { name: 'Food & Dining', icon: 'Utensils' },
+      { name: 'Office Supplies', icon: 'Paperclip' },
+      { name: 'Software/Subscriptions', icon: 'Monitor' },
+      { name: 'Other', icon: 'MoreHorizontal' },
+    ];
+
+    await Promise.all(
+      defaultCategories.map((cat) =>
+        prisma.expenseCategory.create({
+          data: {
+            name: cat.name,
+            icon: cat.icon,
+            companyId: companyId,
+          },
+        })
+      )
+    );
+
+    // 2. Create a default basic workflow
+    const workflow = await prisma.approvalWorkflow.create({
+      data: {
+        name: 'Default Approval Policy',
+        description: 'Standard multi-level approval for all expenses',
+        isDefault: true,
+        companyId: companyId,
+        conditions: { any: true },
+      },
+    });
+
+    // 3. Add a default "Manager Approval" step
+    await prisma.approvalStep.create({
+      data: {
+        order: 1,
+        name: 'Manager Review',
+        type: 'any',
+        approvers: [], // In real app, this would dynamically target the user's manager
+        workflowId: workflow.id,
+      },
+    });
+
+    console.log(`Seeded default data for company: ${companyId}`);
+  } catch (error) {
+    console.error('Failed to seed company data:', error);
+    // Don't fail the whole signup if seeding fails
   }
 }

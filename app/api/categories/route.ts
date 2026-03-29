@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getServerSession } from '@/lib/auth';
 import {
   apiResponse,
   apiError,
@@ -10,10 +11,13 @@ import { createCategorySchema } from '@/lib/validations';
 // GET /api/categories - List all categories
 export async function GET(req: NextRequest) {
   try {
-    const searchParams = new URL(req.url).searchParams;
-    const companyId = searchParams.get('companyId');
-    const where: any = {};
-    if (companyId) where.companyId = companyId;
+    const session = await getServerSession();
+    if (!session?.user) {
+      return apiError('Unauthorized', 401, 'UNAUTHORIZED');
+    }
+
+    const companyId = session.user.companyId;
+    const where: any = { companyId };
 
     const categories = await prisma.expenseCategory.findMany({
       where,
@@ -35,16 +39,24 @@ export async function GET(req: NextRequest) {
 // POST /api/categories - Create new category (admin only)
 export async function POST(req: NextRequest) {
   try {
+    const session = await getServerSession();
+    if (!session?.user) {
+      return apiError('Unauthorized', 401, 'UNAUTHORIZED');
+    }
+
+    // Only admin can create categories
+    if (session.user.role !== 'admin') {
+      return apiError('Forbidden', 403, 'FORBIDDEN');
+    }
+
     const body = await req.json();
     const validatedData = createCategorySchema.parse(body);
-
-    // TODO: Check admin role from session
 
     const category = await prisma.expenseCategory.create({
       data: {
         name: validatedData.name,
         icon: validatedData.icon,
-        companyId: validatedData.companyId || body.companyId || 'company-1',
+        companyId: session.user.companyId,
       },
       select: {
         id: true,

@@ -105,7 +105,9 @@ export function Sidebar() {
             <Building2 className="w-4 h-4 text-sidebar-accent-foreground" />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-sidebar-foreground truncate">{company.name}</p>
-              <p className="text-xs text-muted-foreground">{company.country.currency.symbol} {company.country.currency.code}</p>
+              <p className="text-xs text-muted-foreground">
+                {(company.country as any)?.currency?.symbol || '$'} {(company.country as any)?.currency?.code || 'USD'}
+              </p>
             </div>
           </div>
         </div>
@@ -173,15 +175,6 @@ export function Sidebar() {
                 </Link>
               </DropdownMenuItem>
             )}
-            <DropdownMenuItem onClick={() => switchRole('admin')}>
-              Switch to Admin
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => switchRole('manager')}>
-              Switch to Manager
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => switchRole('employee')}>
-              Switch to Employee
-            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={logout} className="text-destructive">
               <LogOut className="w-4 h-4 mr-2" />

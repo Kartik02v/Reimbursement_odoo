@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getServerSession } from '@/lib/auth';
 import {
   apiResponse,
   apiError,
@@ -12,6 +13,11 @@ import { createExpenseSchema } from '@/lib/validations';
 // GET /api/expenses - List expenses with filtering and pagination
 export async function GET(req: NextRequest) {
   try {
+    const session = await getServerSession();
+    if (!session?.user) {
+      return apiError('Unauthorized', 401, 'UNAUTHORIZED');
+    }
+
     const { page, limit, skip } = getPaginationParams(req.url);
     const searchParams = new URL(req.url).searchParams;
     
@@ -22,7 +28,14 @@ export async function GET(req: NextRequest) {
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
 
-    const where: any = {};
+    const where: any = {
+      companyId: session.user.companyId,
+    };
+
+    // Employees can only see their own expenses
+    if (session.user.role === 'employee') {
+      where.submittedBy = session.user.id;
+    }
 
     if (status) {
       where.status = status;
@@ -95,13 +108,31 @@ export async function GET(req: NextRequest) {
 // POST /api/expenses - Create new expense
 export async function POST(req: NextRequest) {
   try {
+    const session = await getServerSession();
+    if (!session?.user) {
+      return apiError('Unauthorized', 401, 'UNAUTHORIZED');
+    }
+
     const body = await req.json();
     const validatedData = createExpenseSchema.parse(body);
 
-    // TODO: Get userId from session
-    const userId = body.userId;
-    if (!userId) {
-      return apiError('User ID is required', 400, 'BAD_REQUEST');
+    const userId = session.user.id;
+    const companyId = session.user.companyId;
+
+    // Fetch company to get base currency
+    const company = await prisma.company.findUnique({
+      where: { id: companyId },
+      select: { country: true }
+    });
+
+    const companyCountry = company?.country as any;
+    const baseCurrency = companyCountry?.currency?.code || 'USD';
+
+    // Calculate converted amount using live rates
+    let convertedAmount = validatedData.amount;
+    if (validatedData.currency !== baseCurrency) {
+      const { CurrencyService } = await import('@/lib/currency-service');
+      convertedAmount = await CurrencyService.convert(validatedData.amount, validatedData.currency, baseCurrency);
     }
 
     const expense = await prisma.expense.create({
@@ -110,6 +141,7 @@ export async function POST(req: NextRequest) {
         description: validatedData.description,
         amount: validatedData.amount,
         currency: validatedData.currency,
+        convertedAmount: convertedAmount,
         category: validatedData.category,
         expenseDate: new Date(validatedData.expenseDate),
         receiptUrl: validatedData.receiptUrl,
@@ -118,7 +150,7 @@ export async function POST(req: NextRequest) {
         paidBy: validatedData.paidBy,
         status: 'draft',
         submittedBy: userId,
-        companyId: validatedData.companyId || body.companyId || 'company-1',
+        companyId: companyId,
         workflowId: validatedData.workflowId || body.workflowId,
       },
       include: {

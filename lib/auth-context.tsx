@@ -3,18 +3,22 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { useSession, signIn, signOut, getSession } from 'next-auth/react';
 import { signupAction } from './actions/auth-actions';
+import { CurrencyService } from './currency-service';
 import type { User, Company, Country } from './types';
-import { countries } from './mock-data';
 
 interface AuthContextType {
   user: User | null;
   company: Company | null;
+  countries: Country[];
+  currencySymbol: string;
+  currencyCode: string;
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   signup: (name: string, email: string, password: string, companyName: string, country: Country, role?: string) => Promise<boolean>;
   logout: () => void;
   switchRole: (role: 'admin' | 'manager' | 'employee') => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -23,71 +27,62 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
   const [user, setUser] = useState<User | null>(null);
   const [company, setCompany] = useState<Company | null>(null);
+  const [countries, setCountries] = useState<Country[]>([]);
   const [isSyncing, setIsSyncing] = useState(false);
   const isLoading = status === 'loading' || isSyncing;
 
-  // Sync NextAuth session with local state
+  // Fetch countries on mount
   useEffect(() => {
-    const syncUser = async () => {
-      if (session?.user) {
-        setIsSyncing(true);
-        try {
-          // Set initial user from session as fallback
-          const sessionUser = {
-            id: session.user.id,
-            name: session.user.name,
-            email: session.user.email,
-            role: session.user.role || 'employee',
-            companyId: session.user.companyId || 'company-1',
-            department: session.user.department,
-            managerId: session.user.managerId,
-          } as User;
-          
-          setUser(sessionUser);
+    CurrencyService.getCountries().then(setCountries);
+  }, []);
 
-          // Fetch full user details from API
-          const response = await fetch(`/api/users/${session.user.id}`);
-          if (response.ok) {
-            const userData = await response.json();
-            setUser(userData.data as User);
-            
-            // Fetch company data if available
-            if (userData.data.companyId) {
-              setCompany({
-                id: userData.data.companyId,
-                name: 'Acme Corporation',
-                country: countries[0],
-                currency: 'USD',
-                createdAt: new Date(),
-              } as Company);
-            }
+  const refreshUser = useCallback(async () => {
+    if (session?.user?.id) {
+      setIsSyncing(true);
+      try {
+        const response = await fetch(`/api/users/${session.user.id}`);
+        if (response.ok) {
+          const userData = await response.json();
+          const fullUser = userData.data as User & { company: any };
+          setUser(fullUser);
+          
+          if (fullUser.company) {
+            setCompany({
+              ...fullUser.company,
+              createdAt: new Date(fullUser.company.createdAt || new Date()),
+            } as Company);
           }
-        } catch (error) {
-          console.error('Failed to fetch user details:', error);
-          // Fallback is already set, but we can set it again to be sure
-          if (session?.user) {
-            setUser({
-              id: session.user.id,
-              name: session.user.name,
-              email: session.user.email,
-              role: session.user.role,
-              companyId: session.user.companyId,
-              department: session.user.department,
-              managerId: session.user.managerId,
-            } as User);
-          }
-        } finally {
-          setIsSyncing(false);
         }
-      } else {
-        setUser(null);
-        setCompany(null);
+      } catch (error) {
+        console.error('Failed to refresh user details:', error);
+      } finally {
         setIsSyncing(false);
       }
-    };
+    }
+  }, [session?.user?.id]);
 
-    syncUser();
-  }, [session]);
+  // Sync NextAuth session with local state
+  useEffect(() => {
+    if (session?.user) {
+      // Set initial user from session as fallback (including permissions)
+      const sessionUser = {
+        id: session.user.id,
+        name: session.user.name,
+        email: session.user.email,
+        role: session.user.role || 'employee',
+        companyId: session.user.companyId || '',
+        department: session.user.department,
+        managerId: session.user.managerId,
+        permissions: session.user.permissions || {},
+      } as User;
+      
+      setUser(sessionUser);
+      refreshUser();
+    } else if (status !== 'loading') {
+      setUser(null);
+      setCompany(null);
+    }
+  }, [session, status, refreshUser]);
 
   const login = useCallback(async (email: string, password: string): Promise<boolean> => {
     try {
@@ -124,7 +119,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     password: string,
     companyName: string,
     country: Country,
-    role: string = 'employee'
+    role: string = 'admin'
   ): Promise<boolean> => {
     try {
       const result = await signupAction({
@@ -176,17 +171,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [logout]);
 
+  const currencySymbol = (company?.country as any)?.currency?.symbol || (company as any)?.currency?.symbol || '$';
+  const currencyCode = (company?.country as any)?.currency?.code || (company as any)?.currency?.code || 'USD';
+
   return (
     <AuthContext.Provider
       value={{
         user,
         company,
+        countries,
+        currencySymbol,
+        currencyCode,
         isAuthenticated: !!session?.user,
         isLoading,
         login,
         signup,
         logout,
         switchRole,
+        refreshUser,
       }}
     >
       {children}
@@ -201,5 +203,3 @@ export function useAuth() {
   }
   return context;
 }
-
-export { countries };

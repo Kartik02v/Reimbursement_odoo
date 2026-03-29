@@ -140,8 +140,8 @@ export default function AdminDashboardPage() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold">
-                    {company.country.currency.symbol}
-                    {stats.totalApprovedAmount.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                    {company?.country?.currency?.symbol || '$'}
+                    {(stats.totalApprovedAmount || 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}
                   </p>
                   <p className="text-sm text-muted-foreground">Total Approved Amount</p>
                 </div>

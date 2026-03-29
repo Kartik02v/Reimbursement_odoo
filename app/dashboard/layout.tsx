@@ -8,7 +8,7 @@ import { Sidebar } from '@/components/dashboard/sidebar';
 import { Spinner } from '@/components/ui/spinner';
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, company } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -17,7 +17,8 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     }
   }, [isAuthenticated, isLoading, router]);
 
-  if (isLoading) {
+  // If loading or (authenticated and company data isn't synced yet)
+  if (isLoading || (isAuthenticated && !company)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Spinner className="w-8 h-8" />
@@ -33,7 +34,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     <ExpenseProvider>
       <div className="min-h-screen bg-background">
         <Sidebar />
-        <main className="pl-64">{children}</main>
+        <main className="pl-64 h-full">{children}</main>
       </div>
     </ExpenseProvider>
   );

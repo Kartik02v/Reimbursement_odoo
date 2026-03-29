@@ -23,6 +23,13 @@ interface ExpenseContextType {
   markAllNotificationsRead: () => Promise<void>;
   getExpensesByUser: (userId: string) => Expense[];
   getPendingApprovalsForUser: (userId: string) => Expense[];
+  createUser: (userData: any) => Promise<void>;
+  updateUser: (id: string, updates: Partial<User>) => Promise<void>;
+  updateUserPermissions: (id: string, permissions: any) => Promise<void>;
+  deleteUser: (id: string) => Promise<void>;
+  createWorkflow: (workflowData: any) => Promise<void>;
+  updateWorkflow: (id: string, updates: Partial<ApprovalWorkflow>) => Promise<void>;
+  deleteWorkflow: (id: string) => Promise<void>;
   refreshData: () => Promise<void>;
 }
 
@@ -74,6 +81,13 @@ export function ExpenseProvider({ children }: { children: React.ReactNode }) {
       if (notificationsRes.ok) {
         const notificationsData = await notificationsRes.json();
         setNotifications(notificationsData.data || []);
+      }
+
+      // Fetch workflows
+      const workflowsRes = await fetch('/api/workflows');
+      if (workflowsRes.ok) {
+        const workflowsData = await workflowsRes.json();
+        setWorkflows(workflowsData.data || []);
       }
     } catch (error) {
       console.error('Failed to refresh data:', error);
@@ -256,6 +270,126 @@ export function ExpenseProvider({ children }: { children: React.ReactNode }) {
     return expenses.filter(exp => exp.status === 'pending');
   }, [expenses]);
 
+  const createUser = async (userData: any) => {
+    try {
+      const response = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(userData),
+      });
+
+      if (response.ok) {
+        await refreshData();
+      } else {
+        const error = await response.json();
+        throw new Error(error.error?.message || 'Failed to create user');
+      }
+    } catch (error) {
+      console.error('Create user error:', error);
+      throw error;
+    }
+  };
+
+  const updateUser = async (id: string, updates: Partial<User>) => {
+    try {
+      const response = await fetch(`/api/users/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+      });
+
+      if (response.ok) {
+        await refreshData();
+      } else {
+        const error = await response.json();
+        throw new Error(error.error?.message || 'Failed to update user');
+      }
+    } catch (error) {
+      console.error('Update user error:', error);
+      throw error;
+    }
+  };
+
+  const updateUserPermissions = async (id: string, permissions: any) => {
+    await updateUser(id, { permissions });
+  };
+
+  const deleteUser = async (id: string) => {
+    try {
+      const response = await fetch(`/api/users/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        await refreshData();
+      } else {
+        const error = await response.json();
+        throw new Error(error.error?.message || 'Failed to delete user');
+      }
+    } catch (error) {
+      console.error('Delete user error:', error);
+      throw error;
+    }
+  };
+
+  const createWorkflow = async (workflowData: any) => {
+    try {
+      const response = await fetch('/api/workflows', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(workflowData),
+      });
+
+      if (response.ok) {
+        await refreshData();
+      } else {
+        const error = await response.json();
+        throw new Error(error.error?.message || 'Failed to create workflow');
+      }
+    } catch (error) {
+      console.error('Create workflow error:', error);
+      throw error;
+    }
+  };
+
+  const updateWorkflow = async (id: string, updates: Partial<ApprovalWorkflow>) => {
+    try {
+      const response = await fetch(`/api/workflows/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+      });
+
+      if (response.ok) {
+        await refreshData();
+      } else {
+        const error = await response.json();
+        throw new Error(error.error?.message || 'Failed to update workflow');
+      }
+    } catch (error) {
+      console.error('Update workflow error:', error);
+      throw error;
+    }
+  };
+
+  const deleteWorkflow = async (id: string) => {
+    try {
+      const response = await fetch(`/api/workflows/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        await refreshData();
+      } else {
+        const error = await response.json();
+        throw new Error(error.error?.message || 'Failed to delete workflow');
+      }
+    } catch (error) {
+      console.error('Delete workflow error:', error);
+      throw error;
+    }
+  };
+
   return (
     <ExpenseContext.Provider
       value={{
@@ -277,6 +411,13 @@ export function ExpenseProvider({ children }: { children: React.ReactNode }) {
         markAllNotificationsRead,
         getExpensesByUser,
         getPendingApprovalsForUser,
+        createUser,
+        updateUser,
+        updateUserPermissions,
+        deleteUser,
+        createWorkflow,
+        updateWorkflow,
+        deleteWorkflow,
         refreshData,
       }}
     >

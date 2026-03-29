@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getServerSession } from '@/lib/auth';
 import {
   apiResponse,
   apiError,
@@ -9,24 +10,33 @@ import {
 // GET /api/analytics - Get dashboard analytics
 export async function GET(req: NextRequest) {
   try {
+    const session = await getServerSession();
+    if (!session?.user) {
+      return apiError('Unauthorized', 401, 'UNAUTHORIZED');
+    }
+
+    const { id: userId, role, companyId } = session.user;
     const searchParams = new URL(req.url).searchParams;
-    const userId = searchParams.get('userId'); // TODO: Get from session
-    const role = searchParams.get('role'); // TODO: Get from session
     const period = searchParams.get('period') || '30'; // days
 
     const periodDays = parseInt(period);
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - periodDays);
 
-    // Build query based on role
+    // Build query based on role and company
     const whereClause: any = {
+      companyId,
       createdAt: { gte: startDate },
     };
 
     if (role === 'employee') {
       whereClause.submittedBy = userId;
     } else if (role === 'manager') {
-      // TODO: Filter by team members
+      // Filter by team members (manager themselves + their subordinates)
+      whereClause.OR = [
+        { submittedBy: userId },
+        { submitter: { managerId: userId } },
+      ];
     }
 
     // Get expense statistics
@@ -76,13 +86,13 @@ export async function GET(req: NextRequest) {
     ]);
 
     // Get category details for grouped data
-    const categoryIds = expensesByCategory.map((e) => e.category);
+    const categoryIds = expensesByCategory.map((e: any) => e.category);
     const categories = await prisma.expenseCategory.findMany({
       where: { id: { in: categoryIds } },
     });
 
-    const expensesByCategoryWithDetails = expensesByCategory.map((group) => {
-      const category = categories.find((c) => c.id === group.category);
+    const expensesByCategoryWithDetails = expensesByCategory.map((group: any) => {
+      const category = categories.find((c: any) => c.id === group.category);
       return {
         category: {
           id: category?.id,

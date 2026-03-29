@@ -1,20 +1,34 @@
 import { NextRequest } from 'next/server';
+import { getServerSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import {
   apiResponse,
   apiError,
   handleApiError,
 } from '@/lib/api-utils';
-import { updateUserSchema } from '@/lib/validations';
+import { z } from 'zod';
 
-// GET /api/users/[id] - Get user by ID
+const updateUserSchema = z.object({
+  name: z.string().min(2).optional(),
+  email: z.string().email().optional(),
+  role: z.enum(['admin', 'manager', 'employee']).optional(),
+  department: z.string().optional(),
+  managerId: z.string().nullable().optional(),
+  permissions: z.record(z.boolean()).optional(),
+});
+
+// GET /api/users/[id] - Get user details
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await getServerSession();
+    if (!session?.user) {
+      return apiError('Unauthorized', 401, 'UNAUTHORIZED');
+    }
+
     const { id } = await params;
-    // TODO: Add session check
     const user = await prisma.user.findUnique({
       where: { id },
       select: {
@@ -24,33 +38,21 @@ export async function GET(
         role: true,
         department: true,
         managerId: true,
+        companyId: true,
         permissions: true,
+        company: {
+          select: {
+            id: true,
+            name: true,
+            country: true,
+          },
+        },
         createdAt: true,
         updatedAt: true,
-        manager: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-        subordinates: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true,
-          },
-        },
-        _count: {
-          select: {
-            submittedExpenses: true,
-          },
-        },
       },
     });
 
-    if (!user) {
+    if (!user || user.companyId !== session.user.companyId) {
       return apiError('User not found', 404, 'NOT_FOUND');
     }
 
@@ -66,57 +68,87 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await getServerSession();
+    if (!session?.user) {
+      return apiError('Unauthorized', 401, 'UNAUTHORIZED');
+    }
+
+    // Only admin can update users (or managers with permission)
+    if (session.user.role !== 'admin' && !session.user.permissions?.canManageUsers) {
+      return apiError('Forbidden', 403, 'FORBIDDEN');
+    }
+
     const { id } = await params;
-    // TODO: Add session check and authorization
     const body = await req.json();
     const validatedData = updateUserSchema.parse(body);
 
-    const user = await prisma.user.update({
+    const targetUser = await prisma.user.findUnique({
       where: { id },
-      data: validatedData,
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        department: true,
-        managerId: true,
-        permissions: true,
-        updatedAt: true,
+    });
+
+    if (!targetUser || targetUser.companyId !== session.user.companyId) {
+      return apiError('User not found', 404, 'NOT_FOUND');
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id },
+      data: {
+        ...validatedData,
+        managerId: validatedData.managerId === 'none' ? null : (validatedData.managerId || targetUser.managerId),
       },
     });
 
     // Create audit log
     await prisma.auditLog.create({
       data: {
-        userId: id,
-        userName: user.name,
+        userId: session.user.id,
+        userName: session.user.name,
         actionType: 'USER_UPDATED',
-        entityType: 'user',
-        entityId: user.id,
-        entityName: user.name,
-        companyId: body.companyId || 'company-1',
-        newValue: JSON.stringify({
-          changes: validatedData,
-          timestamp: new Date().toISOString(),
-        }),
+        entityType: 'User',
+        entityId: id,
+        entityName: updatedUser.name,
+        companyId: session.user.companyId,
+        timestamp: new Date(),
+        newValue: JSON.stringify(validatedData),
       },
     });
 
-    return apiResponse(user);
+    return apiResponse(updatedUser);
   } catch (error) {
     return handleApiError(error);
   }
 }
 
-// DELETE /api/users/[id] - Delete user (admin only)
+// DELETE /api/users/[id] - Delete user
 export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await getServerSession();
+    if (!session?.user) {
+      return apiError('Unauthorized', 401, 'UNAUTHORIZED');
+    }
+
+    if (session.user.role !== 'admin') {
+      return apiError('Forbidden', 403, 'FORBIDDEN');
+    }
+
     const { id } = await params;
-    // TODO: Add admin authorization check
+
+    // Prevent self-deletion
+    if (id === session.user.id) {
+      return apiError('Cannot delete your own account', 400, 'BAD_REQUEST');
+    }
+
+    const targetUser = await prisma.user.findUnique({
+      where: { id },
+    });
+
+    if (!targetUser || targetUser.companyId !== session.user.companyId) {
+      return apiError('User not found', 404, 'NOT_FOUND');
+    }
+
     await prisma.user.delete({
       where: { id },
     });
@@ -124,20 +156,18 @@ export async function DELETE(
     // Create audit log
     await prisma.auditLog.create({
       data: {
-        userId: id,
-        userName: 'Unknown',
+        userId: session.user.id,
+        userName: session.user.name,
         actionType: 'USER_DELETED',
-        entityType: 'user',
+        entityType: 'User',
         entityId: id,
-        entityName: id,
-        companyId: 'company-1',
-        newValue: JSON.stringify({
-          timestamp: new Date().toISOString(),
-        }),
+        entityName: targetUser.name,
+        companyId: session.user.companyId,
+        timestamp: new Date(),
       },
     });
 
-    return apiResponse({ success: true, message: 'User deleted successfully' });
+    return apiResponse({ success: true });
   } catch (error) {
     return handleApiError(error);
   }
