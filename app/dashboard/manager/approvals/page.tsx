@@ -17,6 +17,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   Tabs,
@@ -46,6 +47,7 @@ import {
   AlertTriangle,
   CheckCheck,
   FileText,
+  Receipt,
   MoreHorizontal,
   Filter,
   Users as UsersIcon,
@@ -158,13 +160,14 @@ export default function ApprovalsPage() {
       <Table>
         <TableHeader>
           <TableRow className="bg-muted/50">
-            <TableHead className="w-[200px]">Submitter</TableHead>
-            <TableHead className="w-[250px]">Expense Details</TableHead>
-            <TableHead className="w-[120px]">Category</TableHead>
-            <TableHead className="w-[120px] text-right">Amount</TableHead>
-            <TableHead className="w-[120px]">Date</TableHead>
+            <TableHead className="w-[180px]">Submitter</TableHead>
+            <TableHead className="w-[80px] text-center">Receipt</TableHead>
+            <TableHead className="w-[220px]">Expense Details</TableHead>
+            <TableHead className="w-[110px]">Category</TableHead>
+            <TableHead className="w-[110px] text-right">Amount</TableHead>
+            <TableHead className="w-[110px]">Date</TableHead>
             <TableHead className="w-[100px]">Status</TableHead>
-            <TableHead className="w-[150px] text-center">Actions</TableHead>
+            <TableHead className="w-[130px] text-center">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -184,6 +187,28 @@ export default function ApprovalsPage() {
                       <p className="font-medium text-sm">{submitter?.name || 'Unknown'}</p>
                       <p className="text-xs text-muted-foreground">{submitter?.email}</p>
                     </div>
+                  </div>
+                </TableCell>
+
+                {/* Receipt Thumbnail */}
+                <TableCell>
+                  <div className="flex justify-center">
+                    {expense.receiptUrl ? (
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <div className="w-10 h-10 rounded border overflow-hidden cursor-zoom-in hover:opacity-80 transition-opacity">
+                            <img src={expense.receiptUrl} alt="Receipt" className="w-full h-full object-cover" />
+                          </div>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-3xl">
+                          <img src={expense.receiptUrl} alt="Full Receipt" className="w-full h-auto rounded-lg" />
+                        </DialogContent>
+                      </Dialog>
+                    ) : (
+                      <div className="w-10 h-10 rounded border bg-muted flex items-center justify-center">
+                        <Receipt className="w-4 h-4 text-muted-foreground opacity-30" />
+                      </div>
+                    )}
                   </div>
                 </TableCell>
 
@@ -260,7 +285,7 @@ export default function ApprovalsPage() {
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <Link href={`/dashboard/expenses/${expense.id}`}>
+                              <Link href={`/dashboard/manager/expenses/${expense.id}`}>
                                 <Button variant="ghost" size="icon" className="h-8 w-8">
                                   <Eye className="h-4 w-4" />
                                 </Button>
@@ -317,7 +342,7 @@ export default function ApprovalsPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem asChild>
-                            <Link href={`/dashboard/expenses/${expense.id}`} className="flex items-center">
+                            <Link href={`/dashboard/manager/expenses/${expense.id}`} className="flex items-center">
                               <Eye className="mr-2 h-4 w-4" />
                               View Details
                             </Link>
@@ -477,6 +502,15 @@ export default function ApprovalsPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
+            {selectedExpense?.receiptUrl && (
+              <div className="rounded-lg border overflow-hidden bg-muted/30">
+                <img 
+                  src={selectedExpense.receiptUrl} 
+                  alt="Receipt Preview" 
+                  className="w-full max-h-48 object-contain"
+                />
+              </div>
+            )}
             <div>
               <label className="text-sm font-medium">Comment (Optional)</label>
               <Textarea
@@ -518,6 +552,15 @@ export default function ApprovalsPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
+            {selectedExpense?.receiptUrl && (
+              <div className="rounded-lg border overflow-hidden bg-muted/30">
+                <img 
+                  src={selectedExpense.receiptUrl} 
+                  alt="Receipt Preview" 
+                  className="w-full max-h-48 object-contain opacity-70 grayscale"
+                />
+              </div>
+            )}
             <div className="flex items-start gap-3 p-3 bg-destructive/10 rounded-lg">
               <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
               <p className="text-sm">

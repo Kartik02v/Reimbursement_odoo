@@ -32,7 +32,7 @@ import {
   FileText,
   Sparkles,
 } from 'lucide-react';
-import type { Expense } from '@/lib/types';
+import { OCRService } from '@/lib/ocr-service';
 
 export default function NewExpensePage() {
   const router = useRouter();
@@ -42,7 +42,7 @@ export default function NewExpensePage() {
 
   const [isScanning, setIsScanning] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [receiptUrl, setReceiptUrl] = useState<string | null>(null);
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
@@ -66,32 +66,49 @@ export default function NewExpensePage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setReceiptFile(file);
+    // Show local preview immediately
     const reader = new FileReader();
     reader.onloadend = () => {
       setReceiptPreview(reader.result as string);
     };
     reader.readAsDataURL(file);
 
-    // Simulate OCR scanning
     setIsScanning(true);
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    try {
+      // 1. Upload to Cloudinary
+      const uploadedUrl = await OCRService.uploadImage(file);
+      setReceiptUrl(uploadedUrl);
 
-    // Mock OCR results
-    const mockOCRResults = [
-      { title: 'Business Lunch', merchantName: 'The Capital Grille', amount: '156.50', category: categories[1]?.id },
-      { title: 'Office Supplies', merchantName: 'Staples', amount: '89.99', category: categories[2]?.id },
-      { title: 'Flight Ticket', merchantName: 'United Airlines', amount: '425.00', category: categories[0]?.id },
-      { title: 'Software License', merchantName: 'Adobe Inc.', amount: '59.99', category: categories[3]?.id },
-    ];
-    const randomResult = mockOCRResults[Math.floor(Math.random() * mockOCRResults.length)];
+      // 2. Read as base64 for vision processing (fallback for server-to-external communication)
+      const base64Image = await new Promise<string>((resolve) => {
+        const r = new FileReader();
+        r.onload = () => resolve(r.result as string);
+        r.readAsDataURL(file);
+      });
 
-    setFormData((prev) => ({
-      ...prev,
-      ...randomResult,
-      currency: prev.currency // Maintain user's currency choice
-    }));
-    setIsScanning(false);
+      // 3. Run high-accuracy Vision OCR
+      const result = await OCRService.scanWithVision(uploadedUrl, base64Image);
+
+      // 4. Map suggested category to ID
+      const suggestedCat = categories.find(c => 
+        c.name.toLowerCase().includes(result.categorySuggestion.toLowerCase())
+      );
+
+      setFormData((prev) => ({
+        ...prev,
+        title: result.title || prev.title,
+        amount: result.amount || prev.amount,
+        merchantName: result.merchantName || prev.merchantName,
+        currency: result.currency || prev.currency,
+        expenseDate: result.date || prev.expenseDate,
+        category: suggestedCat?.id || prev.category,
+      }));
+    } catch (error: any) {
+      console.error('Scanning failed:', error);
+      alert(`OCR failed: ${error.message}`);
+    } finally {
+      setIsScanning(false);
+    }
   };
 
   const handleSave = async (shouldSubmit: boolean) => {
@@ -108,7 +125,7 @@ export default function NewExpensePage() {
         merchantName: formData.merchantName,
         expenseDate: formData.expenseDate,
         status: shouldSubmit ? 'pending' : 'draft',
-        receiptUrl: receiptPreview || undefined,
+        receiptUrl: receiptUrl || receiptPreview || undefined,
         attachmentUrl: attachmentPreview || undefined,
         paidBy: formData.paidBy,
       });

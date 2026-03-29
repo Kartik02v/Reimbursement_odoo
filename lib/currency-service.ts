@@ -15,6 +15,8 @@ export class CurrencyService {
       
       const data = await response.json();
       
+      const uniqueCurrencies = new Map();
+      
       return data
         .filter((c: any) => c.currencies && Object.keys(c.currencies).length > 0)
         .map((c: any) => {
@@ -30,6 +32,13 @@ export class CurrencyService {
               symbol: currencyInfo.symbol || currencyCode,
             }
           };
+        })
+        .filter((c: any) => {
+          if (uniqueCurrencies.has(c.currency.code)) {
+            return false;
+          }
+          uniqueCurrencies.set(c.currency.code, true);
+          return true;
         })
         .sort((a: any, b: any) => a.name.localeCompare(b.name));
     } catch (error) {
