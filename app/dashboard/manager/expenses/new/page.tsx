@@ -18,7 +18,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { countries } from '@/lib/auth-context';
 import {
   Upload,
   Scan,
@@ -33,12 +32,11 @@ import {
   FileText,
   Sparkles,
 } from 'lucide-react';
-import type { Expense } from '@/lib/types';
 
 export default function NewExpensePage() {
   const router = useRouter();
-  const { user, company } = useAuth();
-  const { categories, createExpense, submitExpense } = useExpenses();
+  const { user, company, countries, currencyCode, currencySymbol } = useAuth();
+  const { categories, createExpense } = useExpenses();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [isScanning, setIsScanning] = useState(false);
@@ -50,7 +48,7 @@ export default function NewExpensePage() {
     title: '',
     description: '',
     amount: '',
-    currency: company?.country.currency.code || 'USD',
+    currency: currencyCode || 'USD',
     category: '',
     merchantName: '',
     paidBy: '',
@@ -76,47 +74,50 @@ export default function NewExpensePage() {
 
     // Simulate OCR scanning
     setIsScanning(true);
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     // Mock OCR results
     const mockOCRResults = [
-      { title: 'Business Lunch', merchantName: 'The Capital Grille', amount: '156.50', category: 'cat-2' },
-      { title: 'Office Supplies', merchantName: 'Staples', amount: '89.99', category: 'cat-3' },
-      { title: 'Flight Ticket', merchantName: 'United Airlines', amount: '425.00', category: 'cat-1' },
-      { title: 'Software License', merchantName: 'Adobe Inc.', amount: '59.99', category: 'cat-4' },
+      { title: 'Business Lunch', merchantName: 'The Capital Grille', amount: '156.50', category: categories[1]?.id },
+      { title: 'Office Supplies', merchantName: 'Staples', amount: '89.99', category: categories[2]?.id },
+      { title: 'Flight Ticket', merchantName: 'United Airlines', amount: '425.00', category: categories[0]?.id },
+      { title: 'Software License', merchantName: 'Adobe Inc.', amount: '59.99', category: categories[3]?.id },
     ];
     const randomResult = mockOCRResults[Math.floor(Math.random() * mockOCRResults.length)];
 
     setFormData((prev) => ({
       ...prev,
       ...randomResult,
+      currency: prev.currency
     }));
     setIsScanning(false);
   };
 
   const handleSave = async (shouldSubmit: boolean) => {
     setIsSaving(true);
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    try {
+      const expenseAmount = parseFloat(formData.amount) || 0;
+      
+      await createExpense({
+        title: formData.title,
+        description: formData.description,
+        amount: expenseAmount,
+        currency: formData.currency,
+        category: formData.category,
+        merchantName: formData.merchantName,
+        expenseDate: formData.expenseDate,
+        status: shouldSubmit ? 'pending' : 'draft',
+        receiptUrl: receiptPreview || undefined,
+        attachmentUrl: attachmentPreview || undefined,
+        paidBy: formData.paidBy,
+      });
 
-    const newExpense: Omit<Expense, 'id' | 'createdAt' | 'updatedAt' | 'approvalHistory' | 'currentStepIndex'> = {
-      title: formData.title,
-      description: formData.description,
-      amount: parseFloat(formData.amount) || 0,
-      currency: formData.currency,
-      category: formData.category,
-      merchantName: formData.merchantName,
-      expenseDate: new Date(formData.expenseDate),
-      status: shouldSubmit ? 'pending' : 'draft',
-      submittedBy: user.id,
-      companyId: company.id,
-      receiptUrl: receiptPreview || undefined,
-      attachmentUrl: attachmentPreview || undefined,
-      paidBy: formData.paidBy,
-    };
-
-    createExpense(newExpense);
-    setIsSaving(false);
-    router.push('/dashboard/manager/expenses');
+      router.push('/dashboard/manager/expenses');
+    } catch (error) {
+      console.error('Failed to save expense:', error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (

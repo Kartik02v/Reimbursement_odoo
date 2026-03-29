@@ -82,6 +82,7 @@ export async function GET(req: NextRequest) {
           role: true,
           department: true,
           managerId: true,
+          companyId: true,
           createdAt: true,
           updatedAt: true,
           manager: {
