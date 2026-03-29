@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { useSession, signIn, signOut } from 'next-auth/react';
+import { useSession, signIn, signOut, getSession } from 'next-auth/react';
 import { signupAction } from './actions/auth-actions';
 import type { User, Company, Country } from './types';
 import { countries } from './mock-data';
@@ -64,17 +64,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         } catch (error) {
           console.error('Failed to fetch user details:', error);
-          // Fallback to session data
-          setUser({
-            id: session.user.id,
-            name: session.user.name,
-            email: session.user.email,
-            role: session.user.role,
-            companyId: session.user.companyId,
-            department: session.user.department,
-            managerId: session.user.managerId,
-          } as User);
-        }
+          // Fallback is already set, but we can set it again to be sure
+          if (session?.user) {
+            setUser({
+              id: session.user.id,
+              name: session.user.name,
+              email: session.user.email,
+              role: session.user.role,
+              companyId: session.user.companyId,
+              department: session.user.department,
+              managerId: session.user.managerId,
+            } as User);
+          }
         } finally {
           setIsSyncing(false);
         }
@@ -93,10 +94,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const result = await signIn('credentials', {
         email,
         password,
+        callbackUrl: '/dashboard',
         redirect: false,
       });
 
       if (result?.ok && !result?.error) {
+        // Ensure session is fully available before navigation guards run
+        for (let i = 0; i < 5; i++) {
+          const session = await getSession();
+          if (session?.user) {
+            return true;
+          }
+          await new Promise((resolve) => setTimeout(resolve, 150));
+        }
         return true;
       }
       

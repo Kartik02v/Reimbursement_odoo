@@ -5,10 +5,12 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 
 export default function DashboardRootPage() {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
+    if (isLoading) return;
+
     if (!user) {
       router.push('/login');
       return;
@@ -26,7 +28,7 @@ export default function DashboardRootPage() {
         router.push('/dashboard/employee');
         break;
     }
-  }, [user, router]);
+  }, [user, isLoading, router]);
 
   return (
     <div className="flex items-center justify-center min-h-screen">

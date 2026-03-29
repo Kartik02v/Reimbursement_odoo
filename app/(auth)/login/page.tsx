@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
@@ -13,7 +13,7 @@ import { Receipt, AlertCircle } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, isLoading } = useAuth();
+  const { login, isLoading, isAuthenticated } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -24,11 +24,18 @@ export default function LoginPage() {
     
     const success = await login(email, password);
     if (success) {
-      router.push('/dashboard');
+      router.replace('/dashboard');
+      router.refresh();
     } else {
       setError('Invalid email or password. Try: admin@acme.com, manager@acme.com, or employee@acme.com');
     }
   };
+
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      router.replace('/dashboard');
+    }
+  }, [isAuthenticated, isLoading, router]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -97,6 +104,7 @@ export default function LoginPage() {
                 <p><strong>Admin:</strong> admin@acme.com</p>
                 <p><strong>Manager:</strong> manager@acme.com</p>
                 <p><strong>Employee:</strong> employee@acme.com</p>
+                <p><strong>Password:</strong> password123</p>
               </div>
             </div>
           </CardContent>
