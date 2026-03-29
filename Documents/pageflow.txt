@@ -752,29 +752,3 @@ Login → Admin Dashboard → Users → Expenses → Approval Rules → Reports
          ↓                  ↓        ↓            ↓             ↓
     Analytics         Create/Edit  View All    Configure    Generate
                                    Override
-MOBILE APP PAGE FLOW (SIMPLIFIED)
-text
-
-┌─────────────┐
-│  Splash     │
-│  Screen     │
-└──────┬──────┘
-       ▼
-┌─────────────┐
-│Login/Signup │
-└──────┬──────┘
-       ▼
-┌─────────────────────────────────┐
-│    BOTTOM TAB NAVIGATION        │
-├─────────┬─────────┬─────────────┤
-│  Home   │Expenses │  Profile    │
-└─────┬───┴────┬────┴─────┬───────┘
-      ▼        ▼          ▼
-   Dashboard  List     Settings
-               │
-               ▼
-          ┌─────────┐
-          │+ Button │ (Floating Action Button)
-          └────┬────┘
-               ├── Manual Entry
-               └── Scan Receipt

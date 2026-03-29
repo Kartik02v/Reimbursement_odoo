@@ -39,6 +39,7 @@ export interface User {
   role: UserRole;
   companyId: string;
   managerId?: string;
+  department?: string;
   avatar?: string;
   permissions?: UserPermissions;
   createdAt: Date;
@@ -68,6 +69,8 @@ export interface Expense {
   workflowId?: string;
   currentStepIndex: number;
   approvalHistory: ApprovalHistoryItem[];
+  paidBy?: string;
+  attachmentUrl?: string;
   createdAt: Date;
   updatedAt: Date;
   rejectionReason?: string;

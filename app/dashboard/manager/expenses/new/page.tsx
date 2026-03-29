@@ -116,7 +116,7 @@ export default function NewExpensePage() {
 
     createExpense(newExpense);
     setIsSaving(false);
-    router.push('/dashboard/employee/expenses');
+    router.push('/dashboard/manager/expenses');
   };
 
   return (
