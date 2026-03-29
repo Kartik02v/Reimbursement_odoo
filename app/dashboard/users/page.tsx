@@ -118,7 +118,7 @@ export default function UsersPage() {
       name: formData.name,
       email: formData.email,
       role: formData.role,
-      managerId: formData.managerId || undefined,
+      managerId: formData.managerId === 'none' ? undefined : (formData.managerId || undefined),
       companyId: company.id,
       avatar: formData.name.split(' ').map((n) => n[0]).join('').toUpperCase(),
     });
@@ -132,7 +132,7 @@ export default function UsersPage() {
         name: formData.name,
         email: formData.email,
         role: formData.role,
-        managerId: formData.managerId || undefined,
+        managerId: formData.managerId === 'none' ? undefined : (formData.managerId || undefined),
       });
       setShowEditDialog(false);
       setSelectedUser(null);
@@ -371,7 +371,7 @@ export default function UsersPage() {
                     <SelectValue placeholder="Select manager" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="none">None</SelectItem>
                     {managers.map((m) => (
                       <SelectItem key={m.id} value={m.id}>
                         {m.name} ({m.role})
@@ -449,7 +449,7 @@ export default function UsersPage() {
                     <SelectValue placeholder="Select manager" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="none">None</SelectItem>
                     {managers
                       .filter((m) => m.id !== selectedUser?.id)
                       .map((m) => (
