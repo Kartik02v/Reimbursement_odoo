@@ -28,25 +28,26 @@ import {
 } from 'lucide-react';
 
 const employeeLinks = [
-  { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
-  { href: '/dashboard/expenses', label: 'My Expenses', icon: FileText },
+  { href: '/dashboard/employee', label: 'Overview', icon: LayoutDashboard },
+  { href: '/dashboard/employee/expenses', label: 'My Expenses', icon: FileText },
 ];
 
 const managerLinks = [
-  { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
-  { href: '/dashboard/expenses', label: 'My Expenses', icon: FileText },
-  { href: '/dashboard/approvals', label: 'Approvals', icon: CheckSquare },
+  { href: '/dashboard/manager', label: 'Overview', icon: LayoutDashboard },
+  { href: '/dashboard/employee/expenses', label: 'My Expenses', icon: FileText },
+  { href: '/dashboard/manager/approvals', label: 'Approvals', icon: CheckSquare },
 ];
 
 const adminLinks = [
-  { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
-  { href: '/dashboard/expenses', label: 'My Expenses', icon: FileText },
-  { href: '/dashboard/approvals', label: 'Approvals', icon: CheckSquare },
-  { href: '/dashboard/users', label: 'Users', icon: Users },
-  { href: '/dashboard/workflows', label: 'Workflows', icon: GitBranch },
-  { href: '/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
-  { href: '/dashboard/settings', label: 'Settings', icon: Settings },
+  { href: '/dashboard/admin', label: 'Overview', icon: LayoutDashboard },
+  { href: '/dashboard/employee/expenses', label: 'My Expenses', icon: FileText },
+  { href: '/dashboard/manager/approvals', label: 'Approvals', icon: CheckSquare },
+  { href: '/dashboard/admin/users', label: 'Users', icon: Users },
+  { href: '/dashboard/admin/workflows', label: 'Workflows', icon: GitBranch },
+  { href: '/dashboard/admin/analytics', label: 'Analytics', icon: BarChart3 },
+  { href: '/dashboard/admin/settings', label: 'Settings', icon: Settings },
 ];
+
 
 export function Sidebar() {
   const pathname = usePathname();

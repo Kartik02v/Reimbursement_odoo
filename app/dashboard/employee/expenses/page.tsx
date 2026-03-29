@@ -118,7 +118,7 @@ export default function ExpensesPage() {
         title="My Expenses"
         description="Track and manage your expense submissions"
         action={
-          <Link href="/dashboard/expenses/new">
+          <Link href="/dashboard/employee/expenses/new">
             <Button>
               <Plus className="w-4 h-4 mr-2" />
               New Expense
@@ -182,7 +182,7 @@ export default function ExpensesPage() {
                 : 'Create your first expense to get started'
             }
             action={
-              <Link href="/dashboard/expenses/new">
+              <Link href="/dashboard/employee/expenses/new">
                 <Button>
                   <Plus className="w-4 h-4 mr-2" />
                   New Expense
@@ -253,18 +253,19 @@ export default function ExpensesPage() {
                     <TableCell>{getStatusBadge(expense.status)}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <Link href={`/dashboard/expenses/${expense.id}`}>
+                        <Link href={`/dashboard/employee/expenses/${expense.id}`}>
                           <Button variant="ghost" size="icon">
                             <Eye className="w-4 h-4" />
                           </Button>
                         </Link>
                         {expense.status === 'draft' && (
                           <>
-                            <Link href={`/dashboard/expenses/${expense.id}/edit`}>
+                            <Link href={`/dashboard/employee/expenses/${expense.id}/edit`}>
                               <Button variant="ghost" size="icon">
                                 <Edit className="w-4 h-4" />
                               </Button>
                             </Link>
+
                             <Button
                               variant="ghost"
                               size="icon"

@@ -200,7 +200,7 @@ export default function ApprovalsPage() {
           </div>
 
           <div className="flex items-center gap-2 mt-4 pt-4 border-t">
-            <Link href={`/dashboard/expenses/${expense.id}`} className="flex-1">
+            <Link href={`/dashboard/employee/expenses/${expense.id}`} className="flex-1">
               <Button variant="outline" className="w-full">
                 <Eye className="w-4 h-4 mr-2" />
                 View Details
