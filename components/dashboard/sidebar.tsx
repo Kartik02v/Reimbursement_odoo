@@ -25,6 +25,9 @@ import {
   LogOut,
   ChevronDown,
   Building2,
+  Shield,
+  LayoutGrid,
+  Download,
 } from 'lucide-react';
 
 const employeeLinks = [
@@ -39,13 +42,16 @@ const managerLinks = [
 ];
 
 const adminLinks = [
-  { href: '/dashboard/admin', label: 'Overview', icon: LayoutDashboard },
-  { href: '/dashboard/employee/expenses', label: 'My Expenses', icon: FileText },
-  { href: '/dashboard/manager/approvals', label: 'Approvals', icon: CheckSquare },
-  { href: '/dashboard/admin/users', label: 'Users', icon: Users },
+  { href: '/dashboard/admin', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/dashboard/admin/expenses', label: 'All Expenses', icon: FileText },
+  { href: '/dashboard/admin/users', label: 'Users & Roles', icon: Users },
+  { href: '/dashboard/admin/hierarchy', label: 'Hierarchy', icon: LayoutGrid },
   { href: '/dashboard/admin/workflows', label: 'Workflows', icon: GitBranch },
   { href: '/dashboard/admin/analytics', label: 'Analytics', icon: BarChart3 },
+  { href: '/dashboard/admin/audit', label: 'Audit Logs', icon: Shield },
+  { href: '/dashboard/admin/reports', label: 'Reports / Export', icon: Download },
   { href: '/dashboard/admin/settings', label: 'Settings', icon: Settings },
+  { href: '/dashboard/manager/approvals', label: 'Approvals', icon: CheckSquare },
 ];
 
 
@@ -56,7 +62,25 @@ export function Sidebar() {
 
   if (!user) return null;
 
-  const links = user.role === 'admin' ? adminLinks : user.role === 'manager' ? managerLinks : employeeLinks;
+  const baseLinks = user.role === 'admin' ? adminLinks : user.role === 'manager' ? managerLinks : employeeLinks;
+  
+  // Dynamically add links for managers with specific permissions
+  const links = [...baseLinks];
+  if (user.role === 'manager' && user.permissions) {
+    if (user.permissions.canViewAllExpenses && !links.some(l => l.href === '/dashboard/admin/expenses')) {
+      links.push({ href: '/dashboard/admin/expenses', label: 'All Expenses', icon: FileText });
+    }
+    if (user.permissions.canManageUsers && !links.some(l => l.href === '/dashboard/admin/users')) {
+      links.push({ href: '/dashboard/admin/users', label: 'Users & Roles', icon: Users });
+    }
+    if (user.permissions.canConfigureWorkflows && !links.some(l => l.href === '/dashboard/admin/workflows')) {
+      links.push({ href: '/dashboard/admin/workflows', label: 'Workflows', icon: GitBranch });
+    }
+    if (user.permissions.canViewAllExpenses && !links.some(l => l.href === '/dashboard/admin/audit')) {
+      links.push({ href: '/dashboard/admin/audit', label: 'Audit Logs', icon: Shield });
+    }
+  }
+
   const unreadCount = notifications.filter(n => n.userId === user.id && !n.read).length;
 
   const pendingApprovalsLink = links.find(l => l.href === '/dashboard/approvals');

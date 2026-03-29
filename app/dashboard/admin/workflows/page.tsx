@@ -39,7 +39,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Empty } from '@/components/ui/empty';
+import { Empty, EmptyHeader, EmptyTitle, EmptyDescription, EmptyContent, EmptyMedia } from '@/components/ui/empty';
 import {
   Plus,
   GitBranch,
@@ -74,12 +74,14 @@ export default function WorkflowsPage() {
     conditions: [] as WorkflowCondition[],
   });
 
-  if (!user || !company || user.role !== 'admin') {
+  const canWorkflow = user?.role === 'admin' || user?.permissions?.canConfigureWorkflows;
+
+  if (!user || !company || !canWorkflow) {
     return (
       <div className="min-h-screen">
         <Header title="Access Denied" />
         <div className="p-8">
-          <p className="text-muted-foreground">You do not have permission to view this page.</p>
+          <p className="text-muted-foreground">Admin or elevated manager access required.</p>
         </div>
       </div>
     );
@@ -492,17 +494,21 @@ export default function WorkflowsPage() {
 
       <div className="p-8">
         {companyWorkflows.length === 0 ? (
-          <Empty
-            icon={GitBranch}
-            title="No workflows configured"
-            description="Create your first approval workflow to get started"
-            action={
+          <Empty className="flex-1 py-12">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <GitBranch className="size-6" />
+              </EmptyMedia>
+              <EmptyTitle>No workflows configured</EmptyTitle>
+              <EmptyDescription>Create your first approval workflow to get started</EmptyDescription>
+            </EmptyHeader>
+            <EmptyContent>
               <Button onClick={() => setShowCreateDialog(true)}>
                 <Plus className="w-4 h-4 mr-2" />
                 Create Workflow
               </Button>
-            }
-          />
+            </EmptyContent>
+          </Empty>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {companyWorkflows.map((workflow) => (
