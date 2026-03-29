@@ -1,8 +1,10 @@
 'use client';
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { useSession, signIn, signOut } from 'next-auth/react';
+import { signupAction } from './actions/auth-actions';
 import type { User, Company, Country } from './types';
-import { mockUsers, mockCompany, countries } from './mock-data';
+import { countries } from './mock-data';
 
 interface AuthContextType {
   user: User | null;
@@ -10,7 +12,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<boolean>;
-  signup: (name: string, email: string, password: string, companyName: string, country: Country) => Promise<boolean>;
+  signup: (name: string, email: string, password: string, companyName: string, country: Country, role?: string) => Promise<boolean>;
   logout: () => void;
   switchRole: (role: 'admin' | 'manager' | 'employee') => void;
 }
@@ -18,99 +20,139 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const { data: session, status } = useSession();
   const [user, setUser] = useState<User | null>(null);
   const [company, setCompany] = useState<Company | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const isLoading = status === 'loading';
 
+  // Sync NextAuth session with local state
   useEffect(() => {
-    // Check for existing session
-    const savedUser = localStorage.getItem('reimbursement_user');
-    const savedCompany = localStorage.getItem('reimbursement_company');
-    
-    if (savedUser && savedCompany) {
-      setUser(JSON.parse(savedUser));
-      setCompany(JSON.parse(savedCompany));
-    }
-    setIsLoading(false);
-  }, []);
+    const syncUser = async () => {
+      if (session?.user) {
+        try {
+          // Fetch full user details from API
+          const response = await fetch(`/api/users/${session.user.id}`);
+          if (response.ok) {
+            const userData = await response.json();
+            setUser(userData.data as User);
+            
+            // Fetch company data if available
+            if (userData.data.companyId) {
+              setCompany({
+                id: userData.data.companyId,
+                name: 'Acme Corporation',
+                country: countries[0],
+                currency: 'USD',
+                createdAt: new Date(),
+              } as Company);
+            }
+          }
+        } catch (error) {
+          console.error('Failed to fetch user details:', error);
+          // Fallback to session data
+          setUser({
+            id: session.user.id,
+            name: session.user.name,
+            email: session.user.email,
+            role: session.user.role,
+            companyId: session.user.companyId,
+            department: session.user.department,
+            managerId: session.user.managerId,
+          } as User);
+        }
+      } else {
+        setUser(null);
+        setCompany(null);
+      }
+    };
 
-  const login = useCallback(async (email: string, _password: string): Promise<boolean> => {
-    setIsLoading(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    const foundUser = mockUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
-    
-    if (foundUser) {
-      setUser(foundUser);
-      setCompany(mockCompany);
-      localStorage.setItem('reimbursement_user', JSON.stringify(foundUser));
-      localStorage.setItem('reimbursement_company', JSON.stringify(mockCompany));
-      setIsLoading(false);
-      return true;
+    syncUser();
+  }, [session]);
+
+  const login = useCallback(async (email: string, password: string): Promise<boolean> => {
+    try {
+      const result = await signIn('credentials', {
+        email,
+        password,
+        redirect: false,
+      });
+
+      if (result?.ok && !result?.error) {
+        return true;
+      }
+      
+      console.error('Login failed:', result?.error);
+      return false;
+    } catch (error) {
+      console.error('Login error:', error);
+      return false;
     }
-    
-    setIsLoading(false);
-    return false;
   }, []);
 
   const signup = useCallback(async (
     name: string,
     email: string,
-    _password: string,
+    password: string,
     companyName: string,
-    country: Country
+    country: Country,
+    role: string = 'employee'
   ): Promise<boolean> => {
-    setIsLoading(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    const newCompany: Company = {
-      id: `company-${Date.now()}`,
-      name: companyName,
-      country,
-      createdAt: new Date(),
-    };
-    
-    const newUser: User = {
-      id: `user-${Date.now()}`,
-      email,
-      name,
-      role: 'admin', // First user is always admin
-      companyId: newCompany.id,
-      avatar: name.split(' ').map(n => n[0]).join('').toUpperCase(),
-      createdAt: new Date(),
-    };
-    
-    setUser(newUser);
-    setCompany(newCompany);
-    localStorage.setItem('reimbursement_user', JSON.stringify(newUser));
-    localStorage.setItem('reimbursement_company', JSON.stringify(newCompany));
-    setIsLoading(false);
-    return true;
-  }, []);
+    try {
+      const result = await signupAction({
+        name,
+        email,
+        password,
+        companyName,
+        country,
+        role: role as 'admin' | 'manager' | 'employee',
+      });
 
-  const logout = useCallback(() => {
+      if (result.success) {
+        // Auto login after signup
+        await login(email, password);
+        return true;
+      }
+      
+      console.error('Signup failed:', result.error);
+      return false;
+    } catch (error) {
+      console.error('Signup error:', error);
+      return false;
+    }
+  }, [login]);
+
+  const logout = useCallback(async () => {
+    await signOut({ redirect: false });
     setUser(null);
     setCompany(null);
-    localStorage.removeItem('reimbursement_user');
-    localStorage.removeItem('reimbursement_company');
   }, []);
 
-  const switchRole = useCallback((role: 'admin' | 'manager' | 'employee') => {
-    const roleUser = mockUsers.find(u => u.role === role);
-    if (roleUser) {
-      setUser(roleUser);
-      localStorage.setItem('reimbursement_user', JSON.stringify(roleUser));
+  const switchRole = useCallback(async (role: 'admin' | 'manager' | 'employee') => {
+    // For demo purposes - fetch a user with the specified role
+    try {
+      const response = await fetch(`/api/users?role=${role}&limit=1`);
+      if (response.ok) {
+        const data = await response.json();
+        const roleUser = data.data[0];
+        
+        if (roleUser) {
+          // In a real app, you'd need to login as this user
+          // For now, just log them out and they can login as the role user
+          console.log(`Switch to ${role} - Login as:`, roleUser.email);
+          await logout();
+        }
+      }
+    } catch (error) {
+      console.error('Failed to switch role:', error);
     }
-  }, []);
+  }, [logout]);
 
   return (
     <AuthContext.Provider
       value={{
         user,
         company,
-        isAuthenticated: !!user,
+        isAuthenticated: !!session?.user,
         isLoading,
         login,
         signup,

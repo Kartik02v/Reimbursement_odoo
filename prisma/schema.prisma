@@ -1,0 +1,186 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  admin
+  manager
+  employee
+}
+
+enum ExpenseStatus {
+  draft
+  pending
+  approved
+  rejected
+}
+
+enum ApprovalStepStatus {
+  pending
+  approved
+  rejected
+  skipped
+}
+
+enum ApprovalType {
+  sequential
+  parallel
+  percentage
+  any
+}
+
+model Company {
+  id        String   @id @default(cuid())
+  name      String
+  country   Json     // Stores code, name, currency
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  users     User[]
+  expenses  Expense[]
+  categories ExpenseCategory[]
+  workflows  ApprovalWorkflow[]
+  auditLogs  AuditLog[]
+}
+
+model User {
+  id                String       @id @default(cuid())
+  email             String       @unique
+  name              String
+  role              UserRole     @default(employee)
+  department        String?
+  avatar            String?
+  password          String
+  permissions       Json?        // Stores UserPermissions
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  companyId         String
+  company           Company      @relation(fields: [companyId], references: [id])
+
+  managerId         String?
+  manager           User?        @relation("UserManager", fields: [managerId], references: [id])
+  subordinates      User[]       @relation("UserManager")
+
+  submittedExpenses Expense[]    @relation("SubmittedBy")
+  notifications     Notification[]
+  auditLogs         AuditLog[]
+}
+
+model ExpenseCategory {
+  id        String   @id @default(cuid())
+  name      String
+  icon      String
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id])
+}
+
+model Expense {
+  id                String         @id @default(cuid())
+  title             String
+  description       String?
+  amount            Float
+  currency          String
+  convertedAmount   Float?
+  category          String         // Storing as string to match existing types, but can be updated to relation later
+  receiptUrl        String?
+  merchantName      String?
+  expenseDate       DateTime
+  status            ExpenseStatus  @default(draft)
+  currentStepIndex  Int            @default(0)
+  paidBy            String?
+  attachmentUrl     String?
+  rejectionReason   String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  submittedBy       String
+  submitter         User           @relation("SubmittedBy", fields: [submittedBy], references: [id])
+
+  companyId         String
+  company           Company        @relation(fields: [companyId], references: [id])
+
+  workflowId        String?
+  workflow          ApprovalWorkflow? @relation(fields: [workflowId], references: [id])
+
+  approvalHistory   ApprovalHistoryItem[]
+}
+
+model ApprovalHistoryItem {
+  id           String             @id @default(cuid())
+  stepIndex    Int
+  approverId   String
+  approverName String
+  status       ApprovalStepStatus
+  comment      String?
+  timestamp    DateTime           @default(now())
+
+  expenseId    String
+  expense      Expense            @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+}
+
+model ApprovalWorkflow {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  isDefault   Boolean  @default(false)
+  conditions  Json?    // Stores WorkflowCondition[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id])
+
+  steps       ApprovalStep[]
+  expenses    Expense[]
+}
+
+model ApprovalStep {
+  id                 String             @id @default(cuid())
+  order              Int
+  name               String
+  type               ApprovalType
+  approvers          String[]           // List of User IDs
+  requiredApprovals  Int?
+  percentageRequired Float?
+  autoApproveConditions Json?           // Stores AutoApproveCondition[]
+
+  workflowId         String
+  workflow           ApprovalWorkflow   @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id               String   @id @default(cuid())
+  type             String   // expense_submitted, etc.
+  title            String
+  message          String
+  read             Boolean  @default(false)
+  relatedExpenseId String?
+  createdAt        DateTime @default(now())
+
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  userName     String
+  action       String
+  entityType   String
+  entityId     String
+  entityName   String
+  oldValue     String?  // JSON snapshot
+  newValue     String?  // JSON snapshot
+  comment      String?
+  overrideType String?
+  timestamp    DateTime @default(now())
+
+  companyId    String
+  company      Company  @relation(fields: [companyId], references: [id])
+}

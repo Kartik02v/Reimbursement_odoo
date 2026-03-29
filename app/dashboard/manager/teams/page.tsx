@@ -474,20 +474,36 @@ export default function TeamsPage() {
     return members.reduce((sum, m) => sum + getUserExpenseStats(m.id).pendingCount, 0);
   };
 
-  // Mock recent activity data
-  const recentActivity = [
-    { user: 'John Smith', action: 'submitted expense', target: 'Travel Reimbursement', time: '2 hours ago', type: 'expense' as const },
-    { user: 'Sarah Johnson', action: 'approved', target: 'Office Supplies', time: '4 hours ago', type: 'approval' as const },
-    { user: 'Mike Brown', action: 'rejected', target: 'Equipment Purchase', time: '5 hours ago', type: 'rejection' as const },
-    { user: 'Emma Wilson', action: 'joined team', target: 'Engineering', time: '1 day ago', type: 'join' as const },
-  ];
+  // Recent activity from real expenses
+  const recentActivity = expenses
+    .slice(0, 5)
+    .map(exp => ({
+      user: users.find(u => u.id === exp.submittedBy)?.name || 'Unknown',
+      action: exp.status === 'pending' ? 'submitted expense' : exp.status === 'approved' ? 'approved' : 'rejected',
+      target: exp.title,
+      time: format(new Date(exp.updatedAt), 'MMM d, h:mm a'),
+      type: exp.status === 'pending' ? 'expense' : exp.status === 'approved' ? 'approval' : 'rejection' as any
+    }));
 
-  // Top performers (mock)
-  const topPerformers = [
-    { rank: 1, name: 'Sarah Johnson', department: 'Engineering', metric: 'expenses', value: '$12,450' },
-    { rank: 2, name: 'Mike Brown', department: 'Sales', metric: 'expenses', value: '$10,230' },
-    { rank: 3, name: 'Emma Wilson', department: 'Marketing', metric: 'expenses', value: '$8,790' },
-  ];
+  // Top performers from real expenses
+  const topPerformers = useMemo(() => {
+    const userSpends = mySubordinates.map(m => ({
+      name: m.name,
+      department: m.department || 'N/A',
+      amount: getUserExpenseStats(m.id).totalAmount
+    }));
+    
+    return userSpends
+      .sort((a, b) => b.amount - a.amount)
+      .slice(0, 3)
+      .map((p, i) => ({
+        rank: i + 1,
+        name: p.name,
+        department: p.department,
+        metric: 'expenses',
+        value: `$${p.amount.toLocaleString()}`
+      }));
+  }, [mySubordinates, expenses]);
 
   if (selectedTeam) {
     const teamMembers = teamsMap[selectedTeam] || [];
